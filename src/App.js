@@ -1,24 +1,22 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { SavedFilesProvider } from './Body/SavedFilesContext';
+
+
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <SavedFilesProvider> {/* Wrap the app with SavedFilesProvider */}
+    <Router>
+      <Routes>
+        {/* Home page */}
+        <Route path="/" />
+        {/* input page */}
+        <Route path="/input-data" />
+      </Routes>
+    </Router>
+    </SavedFilesProvider>
+
   );
 }
 
