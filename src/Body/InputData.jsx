@@ -15,11 +15,11 @@ import VisibilityIcon from "@mui/icons-material/Visibility"; // View file icon
 const InputData = () => {
     const [DataFileName, setDataFileName] = useState(""); // Full path of uploaded file
     const [CmdFileName, setCmdFileName] = useState("");
-    const [selectedFile, setSelectedFile] = useState(null); // Holds the uploaded file
-    const [selectedCmdFile, setSelectedCmdFile] = useState(null); // Holds the uploaded file
+    const [selectedFile, setSelectedFile] = useState(null); // Holds the uploaded data file
+    const [selectedCmdFile, setSelectedCmdFile] = useState(null); // Holds the uploaded CMD file
     const [importedFile, setImportedFile] = useState(null); // Holds file after Import button is clicked
 
-    // Handle file upload using upload icon
+    // Handle file upload using upload icon (Data File)
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -28,6 +28,7 @@ const InputData = () => {
         }
     };
 
+    // Handle CMD file upload using upload icon (CMD File)
     const handleCmdFileUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -36,40 +37,45 @@ const InputData = () => {
         }
     };
 
-    // Handle file removal
-    const handleRemoveFile = () => {
-       if(selectedFile) {
-        setSelectedFile(null);
-        setDataFileName(""); // Clear the file path     
-        }
-    else if (selectedCmdFile) {
-        setSelectedCmdFile(null);
-        setCmdFileName(""); // Clear the file path
-    }
-        
-    };
-
     // Handle importing the file
     const handleImport = () => {
         if (selectedFile || selectedCmdFile) {
             setImportedFile(selectedFile || selectedCmdFile);
             alert(
-                `File imported successfully!\nData File: ${selectedFile ? selectedFile.name : "None"
-                }\nCMD File: ${selectedCmdFile ? selectedCmdFile.name : "None"
-                }`
+                `File imported successfully!\nData File: ${selectedFile ? selectedFile.name : "None"}\nCMD File: ${selectedCmdFile ? selectedCmdFile.name : "None"}`
             );
         } else {
-            alert("Please enter a file path or upload a file.");
+            alert("Please upload at least one file.");
         }
     };
+
+     // Handle removing Data File
+     const handleRemoveDataFile = () => {
+        setSelectedFile(null);
+        setDataFileName(""); // Clear the data file name
+        if (importedFile === selectedFile) {
+            setImportedFile(null); // Clear imported file status only if it is CMD file
+        }
+        
+    };
+
+    // Handle removing CMD File
+    const handleRemoveCmdFile = () => {
+        setSelectedCmdFile(null);
+        setCmdFileName(""); // Clear the cmd file name
+        if (importedFile === selectedCmdFile) {
+            setImportedFile(null); // Clear imported file status only if it is CMD file
+        }
+    };
+
+    
 
     // Open file for checking (only for supported types)
     const handleViewFile = () => {
         if (selectedFile) {
             const fileURL = URL.createObjectURL(selectedFile);
             window.open(fileURL, "_blank");
-        }
-        else if (selectedCmdFile) {
+        } else if (selectedCmdFile) {
             const fileURL = URL.createObjectURL(selectedCmdFile);
             window.open(fileURL, "_blank");
         }
@@ -102,17 +108,17 @@ const InputData = () => {
                 {/* Data File Input with Upload Icon */}
                 <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                     <TextField
-                       label="Data File Name"
-                       variant="outlined"
-                       fullWidth
-                       value={DataFileName}
+                        label="Data File Name"
+                        variant="outlined"
+                        fullWidth
+                        value={DataFileName}
                         InputProps={{
-                            readOnly: true // Make input field non-editable
+                            readOnly: true, // Make input field non-editable
                         }}
                         placeholder="Upload file using the icon"
                         disabled={!selectedFile} // Disabled until a file is uploaded
                     />
-                    <Tooltip title="Upload File">
+                    <Tooltip title="Upload Data File">
                         <IconButton component="label" sx={{ ml: 1 }}>
                             <UploadFileIcon fontSize="large" />
                             {/* Hidden file input */}
@@ -126,7 +132,7 @@ const InputData = () => {
 
                     {/* View File Button */}
                     {selectedFile && (
-                        <Tooltip title="View File">
+                        <Tooltip title="View Data File">
                             <IconButton onClick={handleViewFile} sx={{ ml: 1 }}>
                                 <VisibilityIcon fontSize="large" color="info" />
                             </IconButton>
@@ -135,8 +141,8 @@ const InputData = () => {
 
                     {/* Remove File Button */}
                     {selectedFile && (
-                        <Tooltip title="Remove File">
-                            <IconButton onClick={handleRemoveFile} sx={{ ml: 1 }}>
+                        <Tooltip title="Remove Data File">
+                            <IconButton onClick={handleRemoveDataFile} sx={{ ml: 1 }}>
                                 <DeleteIcon fontSize="large" color="error" />
                             </IconButton>
                         </Tooltip>
@@ -151,13 +157,12 @@ const InputData = () => {
                         fullWidth
                         value={CmdFileName}
                         InputProps={{
-                            readOnly: true // Make input field non-editable
+                            readOnly: true, // Make input field non-editable
                         }}
                         placeholder="Upload file using the icon"
                         disabled={!selectedCmdFile} // Disabled until a file is uploaded
-                    
                     />
-                    <Tooltip title="Upload File">
+                    <Tooltip title="Upload CMD File">
                         <IconButton component="label" sx={{ ml: 1 }}>
                             <UploadFileIcon fontSize="large" />
                             {/* Hidden file input */}
@@ -171,7 +176,7 @@ const InputData = () => {
 
                     {/* View File Button */}
                     {selectedCmdFile && (
-                        <Tooltip title="View File">
+                        <Tooltip title="View CMD File">
                             <IconButton onClick={handleViewFile} sx={{ ml: 1 }}>
                                 <VisibilityIcon fontSize="large" color="info" />
                             </IconButton>
@@ -180,8 +185,8 @@ const InputData = () => {
 
                     {/* Remove File Button */}
                     {selectedCmdFile && (
-                        <Tooltip title="Remove File">
-                            <IconButton onClick={handleRemoveFile} sx={{ ml: 1 }}>
+                        <Tooltip title="Remove CMD File">
+                            <IconButton onClick={handleRemoveCmdFile} sx={{ ml: 1 }}>
                                 <DeleteIcon fontSize="large" color="error" />
                             </IconButton>
                         </Tooltip>
@@ -197,11 +202,11 @@ const InputData = () => {
                             color: "#fff",
                             width: "25%",
                             height: "60px",
-                            textWrap: "nowrap",
-                            padding: "20px 20px",
+                            padding: "20px",
                             fontSize: "1.2rem",
                             borderRadius: "8px",
                             border: "5px solid white",
+                            textWrap: "nowrap",
                             textTransform: "none",
                         }}
                     >
@@ -223,7 +228,11 @@ const InputData = () => {
                     <Box mt={2}>
                         <Typography variant="body2" color="success.main">
                             File imported successfully:{" "}
-                            {selectedFile ? selectedFile.name : importedFile}
+                            {selectedFile
+                                ? selectedFile.name
+                                : selectedCmdFile
+                                ? selectedCmdFile.name
+                                : importedFile?.name} {/* Use `.name` to display file name */}
                         </Typography>
                     </Box>
                 )}
