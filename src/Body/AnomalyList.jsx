@@ -27,11 +27,7 @@ export const AnomalyList = () => {
                 </Button>
             </Box>
             {Outliers && Outliers.length > 0 ? (
-
-
                 <TableContainer component={Paper} sx={{ maxHeight: 'calc(100vh - 64px)', overflow: 'auto' }}>
-
-
                     <Table stickyHeader>
                         <TableHead>
                             <TableRow>
