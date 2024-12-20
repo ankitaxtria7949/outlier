@@ -36,15 +36,11 @@ export const Summary = () => {
 
   useEffect(() => {
     if (Array.isArray(Summary)) {
-      setSelectedProduct(getUniqueValues('Product'));
-      setSelectedCountry(getUniqueValues('Country'));
-      setSelectedForecastScenario(getUniqueValues('Forecast Scenario'));
+      setSelectedProduct(getUniqueValues('Product')[0] || null);
+      setSelectedCountry(getUniqueValues('Country')[0] || null);
+      setSelectedForecastScenario(getUniqueValues('Forecast Scenario')[0] || null);
     }
   }, [Summary]);
-
-  const toggleSelection = (setter, selectedValues, value) => {
-    setter([value]); // Select only one option
-  };
 
   if (!Array.isArray(Summary)) {
     return <Typography>Loading data...</Typography>;
@@ -176,15 +172,6 @@ export const Summary = () => {
 
   const summaryWithPercentages = calculatePercentages(filteredSummary);
 
-  // Toggle selection logic
-  const toggleSelection = (setter, selectedValues, value) => {
-    if (selectedValues.includes(value)) {
-      setter(selectedValues.filter(item => item !== value)); // Deselect if already selected
-    } else {
-      setter([...selectedValues, value]); // Add to selected if not already selected
-    }
-  };
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
       {/* Sidebar Filters */}
@@ -270,8 +257,8 @@ export const Summary = () => {
       </Box>
 
       {/* Content Area */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 1000, height: 430 }}>
-        {/* Chart */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 1000, height: 430, overflowY: 'auto' }}>
+        {/* First Chart */}
         <Paper
           sx={{
             flex: 1,
@@ -335,7 +322,7 @@ export const Summary = () => {
       </Box>
 
       {/* Table */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 400, height: 500 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 400, height: 500 }}>
         <Typography variant="h6" gutterBottom textAlign={'center'}>
           Market Summary
         </Typography>
@@ -441,4 +428,3 @@ export const Summary = () => {
     </Box>
   );
 };
-
