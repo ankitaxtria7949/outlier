@@ -36,11 +36,19 @@ export const Summary = () => {
 
   useEffect(() => {
     if (Array.isArray(Summary)) {
-      setSelectedProduct(getUniqueValues('Product'));
-      setSelectedCountry(getUniqueValues('Country'));
-      setSelectedForecastScenario(getUniqueValues('Forecast Scenario'));
+      const uniqueProducts = getUniqueValues('Product');
+      const uniqueCountries = getUniqueValues('Country');
+      const uniqueForecastScenarios = getUniqueValues('Forecast Scenario');
+      
+      setSelectedProduct(uniqueProducts.length > 0 ? [uniqueProducts[0]] : []);
+      setSelectedCountry(uniqueCountries.length > 0 ? [uniqueCountries[0]] : []);
+      setSelectedForecastScenario(uniqueForecastScenarios.length > 0 ? [uniqueForecastScenarios[0]] : []);
     }
   }, [Summary]);
+
+  const toggleSelection = (setter, selectedValues, value) => {
+    setter([value]); // Select only one option
+  };
 
   if (!Array.isArray(Summary)) {
     return <Typography>Loading data...</Typography>;
@@ -162,13 +170,7 @@ export const Summary = () => {
   const summaryWithPercentages = calculatePercentages(filteredSummary);
 
   // Toggle selection logic
-  const toggleSelection = (setter, selectedValues, value) => {
-    if (selectedValues.includes(value)) {
-      setter(selectedValues.filter(item => item !== value)); // Deselect if already selected
-    } else {
-      setter([...selectedValues, value]); // Add to selected if not already selected
-    }
-  };
+  
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
@@ -255,7 +257,7 @@ export const Summary = () => {
       </Box>
 
       {/* Content Area */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 1000, height: 430 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 800, height: 430 }}>
         {/* Chart */}
         <Paper
           sx={{
@@ -289,7 +291,7 @@ export const Summary = () => {
       </Box>
 
       {/* Table */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 300, height: 500 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 400, height: 500 }}>
         <Typography variant="h6" gutterBottom textAlign={'center'}>
           Market Summary
         </Typography>
@@ -395,3 +397,4 @@ export const Summary = () => {
     </Box>
   );
 };
+
