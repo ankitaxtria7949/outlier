@@ -10,6 +10,8 @@ const MyProvider = ({ children }) => {
     const [Outliers, setOutliers] = useState(null); // holds the results from fast-api
     const [DataFileName, setDataFileName] = useState(""); // Full path of uploaded file
     const [Summary, setSummary] =  useState(null); // holds the results from fast-api
+    const [ValData, setValData] = useState(null);
+    
     
     
   return (
@@ -18,6 +20,7 @@ const MyProvider = ({ children }) => {
         Outliers, setOutliers,
         DataFileName, setDataFileName,
         Summary, setSummary,
+        ValData, setValData,
       
     }}>
       {children}

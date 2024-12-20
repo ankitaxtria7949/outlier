@@ -30,15 +30,15 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 export const Summary = () => {
   const { Outliers, Summary } = useContext(MyContext);
 
-  const [selectedProduct, setSelectedProduct] = useState([]);
-  const [selectedCountry, setSelectedCountry] = useState([]);
-  const [selectedForecastScenario, setSelectedForecastScenario] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [selectedForecastScenario, setSelectedForecastScenario] = useState(null);
 
   useEffect(() => {
     if (Array.isArray(Summary)) {
-      setSelectedProduct(getUniqueValues('Product'));
-      setSelectedCountry(getUniqueValues('Country'));
-      setSelectedForecastScenario(getUniqueValues('Forecast Scenario'));
+      setSelectedProduct(getUniqueValues('Product')[0] || null);
+      setSelectedCountry(getUniqueValues('Country')[0] || null);
+      setSelectedForecastScenario(getUniqueValues('Forecast Scenario')[0] || null);
     }
   }, [Summary]);
 
@@ -47,37 +47,29 @@ export const Summary = () => {
   }
 
   const filteredSummary = Summary.filter((summary) => {
-    const productMatch = selectedProduct.length
-      ? selectedProduct.includes(summary.Product)
-      : true;
-    const countryMatch = selectedCountry.length
-      ? selectedCountry.includes(summary.Country)
-      : true;
-    const forecastScenarioMatch = selectedForecastScenario.length
-      ? selectedForecastScenario.includes(summary['Forecast Scenario'])
+    const productMatch = selectedProduct ? selectedProduct === summary.Product : true;
+    const countryMatch = selectedCountry ? selectedCountry === summary.Country : true;
+    const forecastScenarioMatch = selectedForecastScenario
+      ? selectedForecastScenario === summary['Forecast Scenario']
       : true;
     return productMatch && countryMatch && forecastScenarioMatch;
   });
 
-  const filteredOutlier = Outliers.filter((Outliers) => {
-    const productMatch = selectedProduct.length
-      ? selectedProduct.includes(Outliers.Product)
-      : true;
-    const countryMatch = selectedCountry.length
-      ? selectedCountry.includes(Outliers.Country)
-      : true;
-    const forecastScenarioMatch = selectedForecastScenario.length
-      ? selectedForecastScenario.includes(Outliers['Forecast Scenario'])
+  const filteredOutlier = Outliers.filter((outlier) => {
+    const productMatch = selectedProduct ? selectedProduct === outlier.Product : true;
+    const countryMatch = selectedCountry ? selectedCountry === outlier.Country : true;
+    const forecastScenarioMatch = selectedForecastScenario
+      ? selectedForecastScenario === outlier['Forecast Scenario']
       : true;
     return productMatch && countryMatch && forecastScenarioMatch;
   });
 
   const marketVolumeData = filteredSummary.map((summary) => summary['Market Volume']);
-  const ZUCL = filteredSummary.map((summary) =>
-    summary['ZUCL'] === -1 ? null : summary['ZUCL']
+  const IQRUCL = filteredSummary.map((summary) =>
+    summary['IQRUCL'] === -1 ? null : summary['IQRUCL']
   );
-  const ZLCL = filteredSummary.map((summary) =>
-    summary['ZLCL'] === -1 ? null : summary['ZLCL']
+  const IQRLCL = filteredSummary.map((summary) =>
+    summary['IQRLCL'] === -1 ? null : summary['IQRLCL']
   );
   const outlierData = filteredSummary.map((summary) => {
     const isOutlier = filteredOutlier.some(
@@ -85,7 +77,9 @@ export const Summary = () => {
     );
     return isOutlier ? summary['Market Volume'] : null;
   });
-
+  const trendBreakData = filteredSummary.map((summary) =>
+    summary['Trend Break Value'] === -1 ? null : summary['Trend Break Value']
+  );
   const chartData = {
     labels: filteredSummary.map((summary) => summary.Months),
     datasets: [
@@ -97,16 +91,16 @@ export const Summary = () => {
         fill: true,
       },
       {
-        label: 'Upper Control Limit (ZUCL)',
-        data: ZUCL,
+        label: 'Upper Control Limit (UCL)',
+        data: IQRUCL,
         borderColor: '#f44336',
         backgroundColor: 'rgba(244, 67, 54, 0.2)',
         fill: false,
         borderDash: [5, 5],
       },
       {
-        label: 'Lower Control Limit (ZLCL)',
-        data: ZLCL,
+        label: 'Lower Control Limit (LCL)',
+        data: IQRLCL,
         borderColor: '#2196f3',
         backgroundColor: 'rgba(33, 150, 243, 0.2)',
         fill: false,
@@ -126,16 +120,33 @@ export const Summary = () => {
     ],
   };
 
-  const handleMultiSelectChange = (setter, label) => (event) => {
-    const {
-      target: { value },
-    } = event;
-    // If 'All' is selected, select all unique values
-    if (value.includes('All')) {
-      setter(getUniqueValues(label));
-    } else {
-      setter(typeof value === 'string' ? value.split(',') : value);
-    }
+  const chartData2 = {
+    labels: filteredSummary.map((summary) => summary.Months),
+    datasets: [
+      {
+        label: 'Market Volume',
+        data: marketVolumeData,
+        borderColor: '#4caf50',
+        backgroundColor: 'rgba(0, 255, 8, 0.2)',
+        fill: true,
+      },
+      {
+        label: 'Trend Break',
+        data: trendBreakData,
+        borderColor: '#f44336',
+        backgroundColor: 'rgba(236, 16, 0, 0.2)',
+        fill: true,
+        pointStyle: 'circle',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        borderWidth: 2,
+        showLine: false,
+      },
+    ],
+  };
+
+  const handleSelectChange = (setter, value) => {
+    setter(value);
   };
 
   const getUniqueValues = (key) => {
@@ -161,19 +172,10 @@ export const Summary = () => {
 
   const summaryWithPercentages = calculatePercentages(filteredSummary);
 
-  // Toggle selection logic
-  const toggleSelection = (setter, selectedValues, value) => {
-    if (selectedValues.includes(value)) {
-      setter(selectedValues.filter(item => item !== value)); // Deselect if already selected
-    } else {
-      setter([...selectedValues, value]); // Add to selected if not already selected
-    }
-  };
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
       {/* Sidebar Filters */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 250 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 250, position: 'sticky', top: 0 }}>
         <Typography variant="h6" gutterBottom textAlign={'center'}>
           Filters
         </Typography>
@@ -187,8 +189,8 @@ export const Summary = () => {
             {getUniqueValues('Product').map((item, index) => (
               <Button
                 key={index}
-                variant={selectedProduct.includes(item) ? 'contained' : 'outlined'}
-                onClick={() => toggleSelection(setSelectedProduct, selectedProduct, item)}
+                variant={selectedProduct === item ? 'contained' : 'outlined'}
+                onClick={() => handleSelectChange(setSelectedProduct, item)}
                 sx={{
                   width: '100%',
                   maxWidth: 'none',
@@ -212,8 +214,8 @@ export const Summary = () => {
             {getUniqueValues('Country').map((item, index) => (
               <Button
                 key={index}
-                variant={selectedCountry.includes(item) ? 'contained' : 'outlined'}
-                onClick={() => toggleSelection(setSelectedCountry, selectedCountry, item)}
+                variant={selectedCountry === item ? 'contained' : 'outlined'}
+                onClick={() => handleSelectChange(setSelectedCountry, item)}
                 sx={{
                   width: '100%',
                   maxWidth: 'none',
@@ -237,8 +239,8 @@ export const Summary = () => {
             {getUniqueValues('Forecast Scenario').map((item, index) => (
               <Button
                 key={index}
-                variant={selectedForecastScenario.includes(item) ? 'contained' : 'outlined'}
-                onClick={() => toggleSelection(setSelectedForecastScenario, selectedForecastScenario, item)}
+                variant={selectedForecastScenario === item ? 'contained' : 'outlined'}
+                onClick={() => handleSelectChange(setSelectedForecastScenario, item)}
                 sx={{
                   width: '100%',
                   maxWidth: 'none',
@@ -255,8 +257,8 @@ export const Summary = () => {
       </Box>
 
       {/* Content Area */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 1000, height: 430 }}>
-        {/* Chart */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 1000, height: 430, overflowY: 'auto' }}>
+        {/* First Chart */}
         <Paper
           sx={{
             flex: 1,
@@ -286,10 +288,41 @@ export const Summary = () => {
             }}
           />
         </Paper>
+
+        {/* Second Chart */}
+        <Paper
+          sx={{
+            flex: 1,
+            padding: 2,
+            marginTop: 5,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <Typography variant="h6" gutterBottom align="center">
+            Trend Break
+          </Typography>
+          <Line
+            data={chartData2}
+            options={{
+              responsive: true,
+              maintainAspectRatio: true,
+              scales: { x: { display: true } },
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    padding: 10, // Gap between x-axis and legend
+                  },
+                },
+              },
+            }}
+          />
+        </Paper>
       </Box>
 
       {/* Table */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 300, height: 500 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 400, height: 500 }}>
         <Typography variant="h6" gutterBottom textAlign={'center'}>
           Market Summary
         </Typography>
