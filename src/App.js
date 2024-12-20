@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { SavedFilesProvider } from './Body/SavedFilesContext';
-import InputData from './Body/InputData';
 import Home from './Body/Home';
 import { AnomalyList } from './Body/AnomalyList';
 import { Header } from './Header/Header';
@@ -16,7 +15,6 @@ function App() {
           {/* Home page */}
           <Route path="/" element={<Home />} />
           {/* input page */}
-          <Route path="/input-data" element=  {<InputData />} />
           <Route path="/anomaly-list" element=  {<AnomalyList />} />
           <Route path="/summary" element=  {<Summary />} />
           <Route path="/errors" element=  {<ErrorsList />} />
