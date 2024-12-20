@@ -45,7 +45,7 @@ const Home = () => {
 
             try {
                 // Post the formData to the backend API
-                const response = await axios.post('http://localhost:8000/upload2', formData, {
+                const response = await axios.post('https://fast-api-forecast.onrender.com/upload2', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
@@ -64,7 +64,7 @@ const Home = () => {
 
             try {
                 // Post the formData to the backend API
-                const response = await axios.post('http://localhost:8000/upload2', formData, {
+                const response = await axios.post('https://fast-api-forecast.onrender.com/upload2', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
