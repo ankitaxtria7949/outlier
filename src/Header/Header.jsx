@@ -25,7 +25,7 @@ export const Header = () => {
               noWrap
               component="div"
               sx={{ fontWeight: 'bold', color: 'black', fontSize: '2rem', cursor: 'pointer' }}
-             
+              onClick={() => { window.location.href = "/" }}
             >
               Axtria Outlier Tool
             </Typography>

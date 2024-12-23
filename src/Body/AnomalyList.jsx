@@ -29,8 +29,6 @@ export const AnomalyList = () => {
     const [anchorEl, setAnchorEl] = useState(null);
     const [filterColumn, setFilterColumn] = useState("");
 
-    // Calculate the total number of outliers
-
     // Group by Country, Product, and Forecast Scenario
     const groupedOutliers = Outliers.reduce((groups, outlier) => {
         const key = `${outlier.Country}, ${outlier.Product}, ${outlier["Forecast Scenario"]}`;
@@ -38,6 +36,11 @@ export const AnomalyList = () => {
         return groups;
     }, {});
 
+    // Find the combination with the maximum number of outliers
+    const maxOutliersCombination = Object.entries(groupedOutliers).reduce(
+        (max, entry) => (entry[1] > max.count ? { combination: entry[0], count: entry[1] } : max),
+        { combination: "", count: 0 }
+    );
 
     // Function to check if a row exists in Outliers
     const isOutlier = (row) => {
@@ -105,11 +108,10 @@ export const AnomalyList = () => {
         document.body.removeChild(link);
     };
 
-    // The issue was that the template literal was not properly defined.
-
     return (
         <Box sx={{ padding: 2 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                 <FormControlLabel
                     control={
                         <Switch
@@ -122,16 +124,15 @@ export const AnomalyList = () => {
                 />
                 <Box
                     sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mb: 2,
-                        backgroundColor: '#f0f4f8',
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: "#f0f4f8",
                         padding: 1,
-                        borderRadius: 1
+                        borderRadius: 1,
                     }}
                 >
-                    <Typography variant="h5" sx={{ color: '#3f51b5', fontWeight: 'bold' }}>
+                    <Typography variant="h5" sx={{ color: "black", fontWeight: "bold" }}>
                         {showOnlyHighlighted ? "✨ Outliers ✨" : "📊 Source Data 📊"}
                     </Typography>
                 </Box>
@@ -153,7 +154,71 @@ export const AnomalyList = () => {
                     </Button>
                 </Box>
             </Box>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#f0f4f8",
+                    padding: 2,
+                    borderRadius: 1,
+                    mb: 2,
+                    boxShadow: 2, // Optional: Adds a subtle shadow for depth
+                }}
+            >
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        flex: 1, // Ensure columns are evenly spaced
+                    }}
+                >
+                    <Typography variant="body1" sx={{ color: "black" }}>
+                        Max Outliers in:
+                    </Typography>
+                    <Typography
+                        variant="h5"
+                        sx={{
+                            fontWeight: "bold",
+                            color: "#007BFF",
+                            mt: 1,
+                            textAlign: "center",
+                            wordWrap: "break-word", // Handle long text gracefully
+                        }}
+                    >
+                        {maxOutliersCombination.combination}
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: "bold", color: "#007BFF", mt: 1 }}>
+                        Count - {maxOutliersCombination.count}
+                    </Typography>
+                </Box>
 
+                
+
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        flex: 1, // Ensure columns are evenly spaced
+                    }}
+                >
+                    <Typography variant="body1" sx={{ color: "black" }}>
+                        Total Outliers:
+                    </Typography>
+                    <Typography
+                        variant="h2"
+                        sx={{
+                            fontWeight: "bold",
+                            color: "#007BFF", // Optional: Highlight total count with a specific color
+                            mt: 1,
+                        }}
+                    >
+                        {Outliers.length}
+                    </Typography>
+                </Box>
+            </Box>
             {filteredSummary && filteredSummary.length > 0 ? (
                 <TableContainer component={Paper} sx={{ maxHeight: "calc(100vh - 64px)", overflow: "auto" }}>
                     <Table stickyHeader>
@@ -191,18 +256,14 @@ export const AnomalyList = () => {
                             {filteredSummary.map((row, rowIndex) => (
                                 <TableRow
                                     key={rowIndex}
-                                    hover
                                     sx={{
-                                        backgroundColor: isOutlier(row)
-                                            ? "rgba(255, 0, 0, 0.2)"
-                                            : rowIndex % 2 === 0
-                                            ? "#f0f8ff"
-                                            : "white",
-                                        "&:hover": {
-                                            backgroundColor: isOutlier(row)
-                                                ? "rgba(255, 0, 0, 0.3)"
-                                                : "#e6f7ff",
-                                        },
+                                        backgroundColor: rowIndex % 2 === 0
+                                            ? isOutlier(row)
+                                                ? "rgba(255, 0, 0, 0.1)"
+                                                : "#f0f8ff"
+                                            : isOutlier(row)
+                                                ? "rgba(255, 0, 0, 0.2)"
+                                                : "white",
                                     }}
                                 >
                                     {Object.values(row).slice(0, -1).map((value, colIndex) => (
@@ -231,7 +292,6 @@ export const AnomalyList = () => {
                         : "No data available to display."}
                 </Typography>
             )}
-
 
             {/* Filter Menu */}
             <Menu

@@ -12,6 +12,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Chart as ChartJS,
@@ -23,47 +27,67 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-
+ 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-
+ 
 export const Summary = () => {
   const { Outliers, Summary } = useContext(MyContext);
-
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [selectedCountry, setSelectedCountry] = useState(null);
-  const [selectedForecastScenario, setSelectedForecastScenario] = useState(null);
-
+ 
+  const [selectedProduct, setSelectedProduct] = useState(""); // Default to None
+  const [selectedCountry, setSelectedCountry] = useState(""); // Default to None
+  const [selectedForecastScenario, setSelectedForecastScenario] = useState(""); // Default to None
+  const [appliedFilters, setAppliedFilters] = useState({
+    product: "",
+    country: "",
+    forecastScenario: "",
+  });
+ 
   useEffect(() => {
-    if (Array.isArray(Summary)) {
-      setSelectedProduct(getUniqueValues('Product')[0] || null);
-      setSelectedCountry(getUniqueValues('Country')[0] || null);
-      setSelectedForecastScenario(getUniqueValues('Forecast Scenario')[0] || null);
+    if (Array.isArray(Summary) && Summary.length > 0) {
+      // Set default filter values to the first available values from the data
+      setSelectedProduct(Summary[0].Product);
+      setSelectedCountry(Summary[0].Country);
+      setSelectedForecastScenario(Summary[0]['Forecast Scenario']);
     }
   }, [Summary]);
-
+ 
+  useEffect(() => {
+    if (selectedProduct && selectedCountry && selectedForecastScenario) {
+      applyFilters();
+    }
+  }, [selectedProduct, selectedCountry, selectedForecastScenario]);
+ 
+  const applyFilters = () => {
+    setAppliedFilters({
+      product: selectedProduct,
+      country: selectedCountry,
+      forecastScenario: selectedForecastScenario,
+    });
+  };
+ 
   if (!Array.isArray(Summary)) {
     return <Typography>Loading data...</Typography>;
   }
-
+ 
   const filteredSummary = Summary.filter((summary) => {
-    const productMatch = selectedProduct ? selectedProduct === summary.Product : true;
-    const countryMatch = selectedCountry ? selectedCountry === summary.Country : true;
-    const forecastScenarioMatch = selectedForecastScenario
-      ? selectedForecastScenario === summary['Forecast Scenario']
+    const productMatch = appliedFilters.product ? appliedFilters.product === summary.Product : true;
+    const countryMatch = appliedFilters.country ? appliedFilters.country === summary.Country : true;
+    const forecastScenarioMatch = appliedFilters.forecastScenario
+      ? appliedFilters.forecastScenario === summary['Forecast Scenario']
       : true;
     return productMatch && countryMatch && forecastScenarioMatch;
   });
-
+ 
   const filteredOutlier = Outliers.filter((outlier) => {
-    const productMatch = selectedProduct ? selectedProduct === outlier.Product : true;
-    const countryMatch = selectedCountry ? selectedCountry === outlier.Country : true;
-    const forecastScenarioMatch = selectedForecastScenario
-      ? selectedForecastScenario === outlier['Forecast Scenario']
+    const productMatch = appliedFilters.product ? appliedFilters.product === outlier.Product : true;
+    const countryMatch = appliedFilters.country ? appliedFilters.country === outlier.Country : true;
+    const forecastScenarioMatch = appliedFilters.forecastScenario
+      ? appliedFilters.forecastScenario === outlier['Forecast Scenario']
       : true;
     return productMatch && countryMatch && forecastScenarioMatch;
   });
-
+ 
   const marketVolumeData = filteredSummary.map((summary) => summary['Market Volume']);
   const IQRUCL = filteredSummary.map((summary) =>
     summary['UCL'] === -1 ? null : summary['UCL']
@@ -77,6 +101,8 @@ export const Summary = () => {
     );
     return isOutlier ? summary['Market Volume'] : null;
   });
+ 
+ 
   const trendBreakData = filteredSummary.map((summary) =>
     summary['Trend Break Value'] === -1 ? null : summary['Trend Break Value']
   );
@@ -119,7 +145,7 @@ export const Summary = () => {
       },
     ],
   };
-
+ 
   const chartData2 = {
     labels: filteredSummary.map((summary) => summary.Months),
     datasets: [
@@ -144,283 +170,266 @@ export const Summary = () => {
       },
     ],
   };
-
+ 
   const handleSelectChange = (setter, value) => {
     setter(value);
   };
-
+ 
   const getUniqueValues = (key) => {
     return Array.isArray(Summary) ? [...new Set(Summary.map((summary) => summary[key]))] : [];
   };
-
+ 
   const calculatePercentages = (data) => {
     return data.map((item, index) => {
       const prevMonth = data[index - 1];
       const prevQuarter = data[index - 3];
-
+ 
       const MoM = prevMonth
         ? ((item['Market Volume'] - prevMonth['Market Volume']) / prevMonth['Market Volume']) * 100
         : null;
-
+ 
       const QoQ = prevQuarter
         ? ((item['Market Volume'] - prevQuarter['Market Volume']) / prevQuarter['Market Volume']) * 100
         : null;
-
+ 
       return { ...item, MoM, QoQ };
     });
   };
-
+ 
   const summaryWithPercentages = calculatePercentages(filteredSummary);
-
+ 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-      {/* Sidebar Filters */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 250, position: 'sticky', top: 0 }}>
-        <Typography variant="h6" gutterBottom textAlign={'center'}>
-          Filters
-        </Typography>
-
-        {/* Product Filter */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2, boxShadow: 2, padding: 1 }}>
-          <Typography variant="body1" sx={{ fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}>
-            Product
+    <Box sx={{ display: 'flex', flexDirection: 'row', mt: 1 }}>
+      <Box sx={{ mt: 1, padding: 2 }}>
+        {/* Sidebar Filters */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'row',
+            padding: 1,
+            position: 'sticky',
+            top: 0,
+            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+            backgroundColor: '#f5f5f5',
+          }}
+        >
+          <Typography variant="subtitle2" gutterTop textAlign={'center'}>
+            Filters
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {getUniqueValues('Product').map((item, index) => (
-              <Button
-                key={index}
-                variant={selectedProduct === item ? 'contained' : 'outlined'}
-                onClick={() => handleSelectChange(setSelectedProduct, item)}
+ 
+          {/* Filters */}
+          {['Product', 'Country', 'Forecast Scenario'].map((filter) => (
+            <FormControl key={filter} sx={{ m: 2, width: '25ch' }}>
+              <InputLabel id={filter} sx={{ textAlign: 'center' }}>{filter}</InputLabel>
+              <Select
+                labelId={filter}
+                value={
+                  filter === 'Product'
+                    ? selectedProduct
+                    : filter === 'Country'
+                      ? selectedCountry
+                      : selectedForecastScenario
+                }
+                label={filter}
+                onChange={(event) =>
+                  filter === 'Product'
+                    ? handleSelectChange(setSelectedProduct, event.target.value)
+                    : filter === 'Country'
+                      ? handleSelectChange(setSelectedCountry, event.target.value)
+                      : handleSelectChange(setSelectedForecastScenario, event.target.value)
+                }
                 sx={{
-                  width: '100%',
-                  maxWidth: 'none',
-                  fontSize: 10,
-                  padding: 1,
-                  minWidth: '120px',
+                  height: '40px',
+                  backgroundColor: '#f5f5f5',
+                  '& .Mui-selected': {
+                    backgroundColor: 'darkblue !important',
+                    color: 'white !important',
+                  },
+                  '& .MuiSelect-icon': {
+                    color: 'darkblue', // Custom arrow color
+                  },
                 }}
               >
-                {item}
-              </Button>
-            ))}
-          </Box>
+                <MenuItem value="" sx={{ textAlign: 'center' }}>None</MenuItem>
+                {getUniqueValues(filter).map((item, index) => (
+                  <MenuItem key={index} value={item}>
+                    {item}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          ))}
+ 
+          {/* Apply Button */}
+          <Button
+            sx={{
+              m: 2,
+              width: '20ch',
+              height: '40px',
+              backgroundColor: 'darkblue',
+              color: 'white',
+              '&:hover': {
+                backgroundColor: '#0056b3',
+              },
+            }}
+            onClick={applyFilters}
+          >
+            Apply
+          </Button>
         </Box>
-
-        {/* Country Filter */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2, boxShadow: 2, padding: 1 }}>
-          <Typography variant="body1" sx={{ fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}>
-            Country
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {getUniqueValues('Country').map((item, index) => (
-              <Button
-                key={index}
-                variant={selectedCountry === item ? 'contained' : 'outlined'}
-                onClick={() => handleSelectChange(setSelectedCountry, item)}
-                sx={{
-                  width: '100%',
-                  maxWidth: 'none',
-                  fontSize: 10,
-                  padding: 1,
-                  minWidth: '120px',
+ 
+        {/* Content Area */}
+        <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', ml: 2, padding: 1, width: 800, overflowY: 'auto' }}>
+            {/* First Chart */}
+            <Paper
+              sx={{
+                flex: 1,
+ 
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <Typography variant="subtitle1" gutterBottom align="center">
+                Outliers
+              </Typography>
+ 
+              <Line
+                data={chartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: true,
+                  scales: {
+                    x: { display: true },
+                    y: {
+                      ticks: {
+                        callback: function (value) {
+                          const max = Math.max(...chartData.datasets[0].data);
+                          let format = '';
+                          if (max >= 1_000 && max < 999_000) {
+                            format = 'K';
+                          } else if (max >= 999_000) {
+                            format = 'M';
+                          }
+                          return `${(value / (format === 'K' ? 1_000 : (format === 'M' ? 1_000_000 : 1))).toFixed(2)}${format}`;
+                        },
+                      },
+                    },
+                  },
+                  plugins: {
+                    legend: {
+                      position: 'bottom',
+                      labels: {
+                        padding: 10, // Gap between x-axis and legend
+                      },
+                    },
+                  },
                 }}
-              >
-                {item}
-              </Button>
-            ))}
-          </Box>
-        </Box>
-
-        {/* Forecast Scenario Filter */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2, boxShadow: 2, padding: 1 }}>
-          <Typography variant="body1" sx={{ fontSize: 12, fontWeight: 'bold', textAlign: 'center' }}>
-            Forecast Scenario
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {getUniqueValues('Forecast Scenario').map((item, index) => (
-              <Button
-                key={index}
-                variant={selectedForecastScenario === item ? 'contained' : 'outlined'}
-                onClick={() => handleSelectChange(setSelectedForecastScenario, item)}
-                sx={{
-                  width: '100%',
-                  maxWidth: 'none',
-                  fontSize: 10,
-                  padding: 1,
-                  minWidth: '120px',
+              />
+            </Paper>
+ 
+            {/* Second Chart */}
+            <Paper
+              sx={{
+                flex: 1,
+                padding: 2,
+                marginTop: 5,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <Typography variant="h6" gutterBottom align="center">
+                Trend Break
+              </Typography>
+              <Line
+                data={chartData2}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: true,
+                  scales: {
+                    x: { display: true },
+                    y: {
+                      ticks: {
+                        callback: function (value) {
+                          const max = Math.max(...chartData2.datasets[0].data);
+                          let format = '';
+                          if (max >= 1_000 && max < 999_000) {
+                            format = 'K';
+                          } else if (max >= 999_000) {
+                            format = 'M';
+                          }
+                          return `${(value / (format === 'K' ? 1_000 : (format === 'M' ? 1_000_000 : 1))).toFixed(2)}${format}`;
+                        },
+                      },
+                    },
+                  },
+                  plugins: {
+                    legend: {
+                      position: 'bottom',
+                      labels: {
+                        padding: 10, // Gap between x-axis and legend
+                      },
+                    },
+                  },
                 }}
-              >
-                {item}
-              </Button>
-            ))}
+              />
+            </Paper>
           </Box>
         </Box>
       </Box>
-
-      {/* Content Area */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 1000, height: 430, overflowY: 'auto' }}>
-        {/* First Chart */}
-        <Paper
-          sx={{
-            flex: 1,
-            padding: 2,
-            marginTop: 5,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <Typography variant="h6" gutterBottom align="center">
-            Outliers
-          </Typography>
-          <Line
-            data={chartData}
-            options={{
-              responsive: true,
-              maintainAspectRatio: true,
-              scales: { x: { display: true } },
-              plugins: {
-                legend: {
-                  position: 'bottom',
-                  labels: {
-                    padding: 10, // Gap between x-axis and legend
-                  },
-                },
-              },
-            }}
-          />
-        </Paper>
-
-        {/* Second Chart */}
-        <Paper
-          sx={{
-            flex: 1,
-            padding: 2,
-            marginTop: 5,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <Typography variant="h6" gutterBottom align="center">
-            Trend Break
-          </Typography>
-          <Line
-            data={chartData2}
-            options={{
-              responsive: true,
-              maintainAspectRatio: true,
-              scales: { x: { display: true } },
-              plugins: {
-                legend: {
-                  position: 'bottom',
-                  labels: {
-                    padding: 10, // Gap between x-axis and legend
-                  },
-                },
-              },
-            }}
-          />
-        </Paper>
-      </Box>
-
+ 
       {/* Table */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', padding: 1, width: 400, height: 500 }}>
-        <Typography variant="h6" gutterBottom textAlign={'center'}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', width: 400, height: 600 }}>
+        <Typography variant="subtitle1" gutterBottom textAlign={'center'}>
           Market Summary
         </Typography>
         <TableContainer>
           <Table sx={{ border: '1px solid rgba(0, 0, 0, 0.12)' }}>
             <TableHead sx={{ position: 'sticky', top: 0 }}>
               <TableRow sx={{ bgcolor: '#007bff' }}>
-                <TableCell
-                  sx={{
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-                    padding: 1.2,
-                    textAlign: 'center',
-                  }}
-                >
+                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', padding: 1.2, textAlign: 'center' }}>
                   Months
                 </TableCell>
-                <TableCell
-                  sx={{
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-                    textAlign: 'center',
-                    padding: 1.2,
-                  }}
-                >
+                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', textAlign: 'center', padding: 1.2 }}>
                   Market Volume
                 </TableCell>
-                <TableCell
-                  sx={{
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-                    padding: 1.2,
-                    textAlign: 'center',
-                  }}
-                >
-                  MoM %
+                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', padding: 1.2, textAlign: 'center' }}>
+                  Month on Month %
                 </TableCell>
-                <TableCell
-                  sx={{
-                    color: 'white',
-                    fontWeight: 'bold',
-                    borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-                    padding: 1.2,
-                    textAlign: 'center',
-                  }}
-                >
-                  QoQ %
+                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', padding: 1.2, textAlign: 'center' }}>
+                  Quarter on Quarter %
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {summaryWithPercentages.map((row, index) => (
-                <TableRow key={index}>
-                  <TableCell
+              {summaryWithPercentages.map((row, index) => {
+                const ismyOutlier = filteredOutlier.some(outlier => outlier.Months === row.Months);
+ 
+                // Check if this row is an outlier
+               
+ 
+                return (
+                  <TableRow
+                    key={index}
                     sx={{
-                      borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-                      fontSize: '0.85rem',
-                      textAlign: 'center',
-                      padding: 1,
+                      bgcolor: ismyOutlier ? 'rgba(255, 0, 0, 0.2)' : index % 2 === 0 ? '#f0f8ff' : 'white', // Highlight outlier rows with yellow
                     }}
                   >
-                    {row.Months}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-                      fontSize: '0.85rem',
-                      textAlign: 'center',
-                      padding: 0.5,
-                    }}
-                  >
-                    {row['Market Volume'].toFixed(2)}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-                      fontSize: '0.85rem',
-                      textAlign: 'center',
-                      padding: 0.5,
-                    }}
-                  >
-                    {row.MoM !== null ? `${row.MoM.toFixed(2)}%` : '-'}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      borderRight: '1px solid rgba(0, 0, 0, 0.12)',
-                      fontSize: '0.85rem',
-                      textAlign: 'center',
-                      padding: 0.5,
-                    }}
-                  >
-                    {row.QoQ !== null ? `${row.QoQ.toFixed(2)}%` : '-'}
-                  </TableCell>
-                </TableRow>
-              ))}
+                    <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', fontSize: '0.85rem', textAlign: 'center', padding: 1 }}>
+                      {row.Months}
+                    </TableCell>
+                    <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', fontSize: '0.85rem', textAlign: 'center', padding: 0.5 }}>
+                      {row['Market Volume'].toFixed(2)}
+                    </TableCell>
+                    <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', fontSize: '0.85rem', textAlign: 'center', padding: 0.5 }}>
+                      {row.MoM !== null ? `${row.MoM.toFixed(2)}%` : '-'}
+                    </TableCell>
+                    <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', fontSize: '0.85rem', textAlign: 'center', padding: 0.5 }}>
+                      {row.QoQ !== null ? `${row.QoQ.toFixed(2)}%` : '-'}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
