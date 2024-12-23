@@ -49,7 +49,7 @@ const Home = () => {
             try {
                 setLoading(true); // Set loading state to true before the request
                 // Post the formData to the backend API
-                const response = await axios.post('http://127.0.0.1:8000/upload2', formData, {
+                const response = await axios.post('https://fast-api-forecast.onrender.com/upload2', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
@@ -73,7 +73,7 @@ const Home = () => {
             try {
                 setLoading(true); // Set loading state to true before the request
                 // Post the formData to the backend API
-                const response = await axios.post('http://127.0.0.1:8000/upload2', formData, {
+                const response = await axios.post('https://fast-api-forecast.onrender.com/upload2', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
@@ -84,7 +84,7 @@ const Home = () => {
                 setOutliers(response.data.outliers); // Update state with fetched outliers
                 setSummary(response.data.summary);
                 navigate('/summary');
-                
+
             } catch (error) {
                 setLoading(false); // Set loading state to true before the request
                 console.error('Error uploading file:', error); // Log the error for debugging
@@ -178,7 +178,7 @@ const Home = () => {
             >
                 <h1 style={{ textWrap: 'nowrap', textAlign: 'center', marginTop: '10px' }}>
 
-                    Welcome to the Outlier Detection tool!</h1>
+                    Welcome to the Outlier Detection Tool!</h1>
                 <Grid container spacing={4} justifyContent="center" sx={{ marginBottom: '40px', marginTop: '5px' }}>
                     {/* Card 1 */}
                     <Grid item xs={12} sm={6} md={4}>
@@ -199,7 +199,7 @@ const Home = () => {
                                 <ScatterPlotIcon sx={{ fontSize: 50, color: 'black', marginTop: '20px' }} />
                                 <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <Typography gutterBottom variant="h6" component="div" sx={{ fontWeight: 'bold', color: 'black' }}>
-                                        Detect Outlier
+                                        Outlier Detection
                                     </Typography>
                                     <Typography
                                         variant="body2"
@@ -211,8 +211,7 @@ const Home = () => {
                                             mt: 2
                                         }}
                                     >
-                                        A tool for flagging outliers on consolidated data, streamlining data analysis, and
-                                        providing valuable insights.
+                                        Identify and flag unusual data points that deviate significantly from the expected range or patterns, ensuring data accuracy and consistency.
                                     </Typography>
                                 </CardContent>
                             </CardActionArea>
@@ -237,14 +236,13 @@ const Home = () => {
                                 <TrendingUp sx={{ fontSize: 50, color: 'black', marginTop: '20px' }} />
                                 <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <Typography gutterBottom variant="h6" component="div" sx={{ fontWeight: 'bold', color: 'black' }}>
-                                        Track Trendbreaks
+                                        Trendbreak Analysis
                                     </Typography>
                                     <Typography
                                         variant="body2"
                                         sx={{ color: 'text.secondary', textAlign: 'center', fontSize: '14px', mt: 2 }}
                                     >
-                                        A tool for detecting trend breaks in data, identifying significant deviations, and highlighting potential issues.
-                                        critical changes to ensure timely and informed decision making.
+                                        Analyze disruptions or shifts in data trends over time to uncover insights and understand their impact on overall performance.
                                     </Typography>
                                 </CardContent>
                             </CardActionArea>
@@ -269,7 +267,7 @@ const Home = () => {
                                 <TaskAlt sx={{ fontSize: 50, color: 'black', marginTop: '20px' }} />
                                 <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', color: 'blavk' }}>
-                                        Run Validation Checks
+                                        Data Validation
                                     </Typography>
                                     <Typography
                                         variant="body2"
@@ -281,8 +279,7 @@ const Home = () => {
                                             mt: 2
                                         }}
                                     >
-                                        A tool for running validation checks to identify wrong data types, special characters
-                                        and inapopropriate metric values, ensuring data integrirty and accuracy.
+                                        Ensure the accuracy and reliability of data by performing automated checks to identify incorrect data types, unexpected special characters, and invalid metric values.
                                     </Typography>
                                 </CardContent>
                             </CardActionArea>
