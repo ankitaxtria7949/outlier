@@ -66,10 +66,10 @@ export const Summary = () => {
 
   const marketVolumeData = filteredSummary.map((summary) => summary['Market Volume']);
   const IQRUCL = filteredSummary.map((summary) =>
-    summary['IQRUCL'] === -1 ? null : summary['IQRUCL']
+    summary['UCL'] === -1 ? null : summary['UCL']
   );
   const IQRLCL = filteredSummary.map((summary) =>
-    summary['IQRLCL'] === -1 ? null : summary['IQRLCL']
+    summary['LCL'] === -1 ? null : summary['LCL']
   );
   const outlierData = filteredSummary.map((summary) => {
     const isOutlier = filteredOutlier.some(
