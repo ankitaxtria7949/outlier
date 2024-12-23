@@ -49,7 +49,7 @@ const Home = () => {
             try {
                 setLoading(true); // Set loading state to true before the request
                 // Post the formData to the backend API
-                const response = await axios.post('http://127.0.0.1:8000/upload2', formData, {
+                const response = await axios.post('https://fast-api-forecast.onrender.com/upload2', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
@@ -73,7 +73,7 @@ const Home = () => {
             try {
                 setLoading(true); // Set loading state to true before the request
                 // Post the formData to the backend API
-                const response = await axios.post('http://127.0.0.1:8000/upload2', formData, {
+                const response = await axios.post('https://fast-api-forecast.onrender.com/upload2', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
@@ -99,7 +99,7 @@ const Home = () => {
             try {
                 setLoading(true); // Set loading state to true before the request
                 // Post the formData to the backend API
-                const response = await axios.post('http://127.0.0.1:8000/upload2', formData, {
+                const response = await axios.post('https://fast-api-forecast.onrender.com/upload2', formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
