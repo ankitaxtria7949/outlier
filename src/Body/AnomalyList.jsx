@@ -12,39 +12,31 @@ import {
     Typography,
     Switch,
     FormControlLabel,
-    Menu,
+    FormControl,
+    Select,
     MenuItem,
-    IconButton,
+    InputLabel,
+    ButtonGroup,
 } from "@mui/material";
-import FilterListIcon from "@mui/icons-material/FilterList";
+import Tooltip from "@mui/material/Tooltip";
 import { MyContext } from "./Context";
 import { useNavigate } from "react-router-dom";
+import FilterListIcon from "@mui/icons-material/FilterList";
 
 export const AnomalyList = () => {
-    const { Summary } = useContext(MyContext);
-    const { Outliers } = useContext(MyContext);
+    const { Summary, Outliers } = useContext(MyContext);
     const navigate = useNavigate();
     const [showOnlyHighlighted, setShowOnlyHighlighted] = useState(false);
     const [filters, setFilters] = useState({});
-    const [anchorEl, setAnchorEl] = useState(null);
-    const [filterColumn, setFilterColumn] = useState("");
+    const [order, setOrder] = useState("asc");
+    const [orderBy, setOrderBy] = useState("");
+    const [viewMode, setViewMode] = useState("all"); // 'all', 'outliers', 'withoutOutliers'
 
-    // Group by Country, Product, and Forecast Scenario
-    const groupedOutliers = Outliers.reduce((groups, outlier) => {
-        const key = `${outlier.Country}, ${outlier.Product}, ${outlier["Forecast Scenario"]}`;
-        groups[key] = (groups[key] || 0) + 1;
-        return groups;
-    }, {});
 
-    // Find the combination with the maximum number of outliers
-    const maxOutliersCombination = Object.entries(groupedOutliers).reduce(
-        (max, entry) => (entry[1] > max.count ? { combination: entry[0], count: entry[1] } : max),
-        { combination: "", count: 0 }
-    );
 
     // Function to check if a row exists in Outliers
     const isOutlier = (row) => {
-        return Outliers.some((outlier) =>
+        return Outliers && Outliers.some((outlier) =>
             JSON.stringify(outlier) === JSON.stringify(row)
         );
     };
@@ -55,43 +47,69 @@ export const AnomalyList = () => {
             value ? row[key].toString() === value : true
         );
     };
+    const filteredSummary = Summary.filter((row) => {
+        if (viewMode === "outliers") return isOutlier(row);
+        if (viewMode === "withoutOutliers") return !isOutlier(row);
+        return true; // 'all'
+    }).filter((row) =>
+        Object.entries(filters).every(([key, value]) =>
+            value ? row[key].toString() === value : true
+        )
+    );
 
-    const filteredSummary = showOnlyHighlighted
-        ? Summary.filter((row) => isOutlier(row) && applyFilters(row))
-        : Summary.filter(applyFilters);
 
+
+        
     // Function to handle filter changes
-    const handleFilterChange = (value) => {
+    const handleFilterChange = (column, value) => {
         setFilters((prev) => ({
             ...prev,
-            [filterColumn]: value,
+            [column]: value,
         }));
-        setAnchorEl(null);
-    };
-
-    const openFilterMenu = (event, column) => {
-        setFilterColumn(column);
-        setAnchorEl(event.currentTarget);
-    };
-
-    const closeFilterMenu = () => {
-        setAnchorEl(null);
     };
 
     // Function to get unique values for a column
     const getColumnValues = (column) => {
+        if (!Summary) return [];
         const values = Summary.map((row) => row[column]).filter((value) => value !== -1);
         return [...new Set(values)]; // Unique values
     };
+
+    // Function to handle sorting
+    const handleRequestSort = (property) => {
+        const isAsc = orderBy === property && order === "asc";
+        setOrder(isAsc ? "desc" : "asc");
+        setOrderBy(property);
+    };
+
+    // Sort rows by the selected column and order
+    const sortedRows = [...filteredSummary].sort((a, b) => {
+        if (orderBy) {
+            const aValue = a[orderBy];
+            const bValue = b[orderBy];
+
+            if (aValue < bValue) {
+                return order === "asc" ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return order === "asc" ? 1 : -1;
+            }
+            return 0;
+        }
+        return 0;
+    });
 
     // Function to download table data as CSV
     const downloadCSV = () => {
         if (!filteredSummary || filteredSummary.length === 0) return;
 
-        const headers = Object.keys(filteredSummary[0]).join(",");
+        const headers = Object.keys(filteredSummary[0])
+            .slice(0, -1) // Exclude the last column
+            .join(",");
         const rows = filteredSummary
             .map((row) =>
                 Object.values(row)
+                    .slice(0, -1) // Exclude the last column
                     .map((value) => (value === -1 ? "" : value)) // Handle -1 as empty
                     .join(",")
             )
@@ -108,52 +126,75 @@ export const AnomalyList = () => {
         document.body.removeChild(link);
     };
 
+    const findMaxOutlierCombination = () => {
+        if (!Outliers || Outliers.length === 0) return;
+
+        // Group data by combination
+        const counts = Outliers.reduce((acc, outlier) => {
+            // Use bracket notation for "Forecast Scenario"
+            const key = `${outlier.Product}|${outlier.Country}|${outlier["Forecast Scenario"]}`;
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Find the maximum combination
+        let maxKey = null;
+        let maxCount = 0;
+        for (const [key, count] of Object.entries(counts)) {
+            if (count > maxCount) {
+                maxKey = key;
+                maxCount = count;
+            }
+        }
+
+        // Parse the key to extract Product, Country, and ForecastScenario
+        const [Product, Country, ForecastScenario] = maxKey.split("|");
+        return { Product, Country, ForecastScenario, count: maxCount };
+    };
+    const result = findMaxOutlierCombination();
+
+    const totalMarketVolume = Summary.reduce((sum, item) => {
+        return sum + (item['Market Volume'] || 0);
+    }, 0);
+
     return (
         <Box sx={{ padding: 2 }}>
-
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={showOnlyHighlighted}
-                            onChange={(e) => setShowOnlyHighlighted(e.target.checked)}
-                            color="primary"
-                        />
-                    }
-                    label="Show only Outliers"
-                />
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: "#f0f4f8",
-                        padding: 1,
-                        borderRadius: 1,
-                    }}
-                >
+            <ButtonGroup variant="contained" color="primary">
+                    <Button
+                        onClick={() => setViewMode("all")}
+                        variant={viewMode === "all" ? "contained" : "outlined"}
+                    >
+                        All Data
+                    </Button>
+                    <Button
+                        onClick={() => setViewMode("outliers")}
+                        variant={viewMode === "outliers" ? "contained" : "outlined"}
+                    >
+                        Outliers Only
+                    </Button>
+                    <Button
+                        onClick={() => setViewMode("withoutOutliers")}
+                        variant={viewMode === "withoutOutliers" ? "contained" : "outlined"}
+                    >
+                        Without Outliers
+                    </Button>
+                </ButtonGroup>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-start", backgroundColor: "#f0f4f8", padding: 1, borderRadius: 1, ml: -15 }}>
                     <Typography variant="h5" sx={{ color: "black", fontWeight: "bold" }}>
                         {showOnlyHighlighted ? "✨ Outliers ✨" : "📊 Source Data 📊"}
                     </Typography>
                 </Box>
                 <Box>
-                    <Button
-                        variant="contained"
-                        sx={{ mr: 2 }}
-                        onClick={downloadCSV}
-                    >
+                    <Button variant="contained" sx={{ mr: 2 }} onClick={downloadCSV}>
                         Download CSV
                     </Button>
-                    <Button
-                        variant="contained"
-                        onClick={() => {
-                            navigate("/summary");
-                        }}
-                    >
+                    <Button variant="contained" onClick={() => { navigate("/summary"); }}>
                         Summary
                     </Button>
                 </Box>
             </Box>
+
             <Box
                 sx={{
                     display: "flex",
@@ -175,27 +216,21 @@ export const AnomalyList = () => {
                     }}
                 >
                     <Typography variant="body1" sx={{ color: "black" }}>
-                        Max Outliers in:
+                        Total Outliers:
                     </Typography>
                     <Typography
-                        variant="h5"
+                        variant="h2"
                         sx={{
                             fontWeight: "bold",
-                            color: "#007BFF",
-                            mt: 1,
-                            textAlign: "center",
-                            wordWrap: "break-word", // Handle long text gracefully
+                            color: "#007BFF", // Optional: Highlight total count with a specific color
                         }}
                     >
-                        {maxOutliersCombination.combination}
+                        {Outliers.length}
                     </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: "bold", color: "#007BFF", mt: 1 }}>
-                        Count - {maxOutliersCombination.count}
+                    <Typography variant="body1" sx={{ color: "black" }}>
+                        out of <b>{Summary.length}</b>
                     </Typography>
                 </Box>
-
-                
-
                 <Box
                     sx={{
                         display: "flex",
@@ -205,28 +240,104 @@ export const AnomalyList = () => {
                     }}
                 >
                     <Typography variant="body1" sx={{ color: "black" }}>
-                        Total Outliers:
+                        Total Market Volume
                     </Typography>
                     <Typography
                         variant="h2"
                         sx={{
                             fontWeight: "bold",
                             color: "#007BFF", // Optional: Highlight total count with a specific color
-                            mt: 1,
                         }}
                     >
-                        {Outliers.length}
+                        {totalMarketVolume < 1000 ? totalMarketVolume :
+                            totalMarketVolume < 100000 ?
+                                (totalMarketVolume / 1000).toFixed(2) + 'k' :
+                                (totalMarketVolume / 1000000).toFixed(2) + 'M'}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: "black" }}>
+                        across the data
                     </Typography>
                 </Box>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        flex: 1, // Ensure columns are evenly spaced
+                    }}
+                >
+                    <Typography variant="body1" sx={{ color: "black" }}>
+                        Max Outliers
+                    </Typography>
+                    <Typography
+                        variant="h2"
+                        sx={{
+                            fontWeight: "bold",
+                            color: "#007BFF", // Optional: Highlight total count with a specific color
+                        }}
+                    >
+                        {result.count}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: "black" }}>
+                        In <b>{result.Country}</b> for Product <b>{result.Product}</b> and  <b>{result.ForecastScenario}</b> Forecast Scenario
+                    </Typography>
+                </Box>
+                
+
+
+
+
             </Box>
-            {filteredSummary && filteredSummary.length > 0 ? (
+
+            {/* Filter Dropdowns for First Three Columns */}
+            <Box sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+                backgroundColor: '#f5f5f5',
+                mb: 2
+            }}>
+                {["Product", "Country", "Forecast Scenario"].map((column, index) => (
+                    <FormControl key={index} sx={{ m: 2, width: '20ch' }} size='small'>
+                        <InputLabel>{column}</InputLabel>
+                        <Select
+                            value={filters[column] || ""}
+                            onChange={(e) => handleFilterChange(column, e.target.value)}
+                            label={column}
+                            sx={{
+                                height: '40px',
+                                backgroundColor: '#f5f5f5',
+                                '& .Mui-selected': {
+                                    backgroundColor: 'darkblue !important',
+                                    color: 'white !important',
+                                },
+                                '& .MuiSelect-icon': {
+                                    color: 'darkblue', // Custom arrow color
+                                },
+                            }}
+                        >
+                            <MenuItem value="">
+                                <em>All</em>
+                            </MenuItem>
+                            {getColumnValues(column).map((value, valueIndex) => (
+                                <MenuItem key={valueIndex} value={value}>
+                                    {value}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                ))}
+            </Box>
+
+            {/* Table */}
+            {sortedRows && sortedRows.length > 0 ? (
                 <TableContainer component={Paper} sx={{ maxHeight: "calc(100vh - 64px)", overflow: "auto" }}>
                     <Table stickyHeader>
                         <TableHead>
                             <TableRow>
                                 {Object.keys(Summary[0]).slice(0, -1).map((key, index) => (
                                     <TableCell
-                                        key={key}
+                                        key={index}
                                         sx={{
                                             fontWeight: "bold",
                                             backgroundColor: "#f5f5f5",
@@ -238,32 +349,63 @@ export const AnomalyList = () => {
                                             textOverflow: "ellipsis",
                                         }}
                                     >
-                                        {key}
-                                        {index < 2 && ( // Only add filter to the first two columns
-                                            <IconButton
-                                                size="small"
-                                                onClick={(event) => openFilterMenu(event, key)}
-                                                sx={{ ml: 1 }}
-                                            >
-                                                <FilterListIcon sx={{ color: filters[key] ? "red" : "inherit" }} />
-                                            </IconButton>
-                                        )}
+
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                cursor: "pointer",
+                                            }}
+                                            onClick={() => handleRequestSort(key)}
+                                        >
+                                            {key}
+                                            <Tooltip title="Sort" arrow>
+                                                <FilterListIcon
+                                                    sx={{
+                                                        marginLeft: 1,
+                                                        color:
+                                                            orderBy === key
+                                                                ? order === "asc"
+                                                                    ? "blue"
+                                                                    : "red"
+                                                                : "gray",
+                                                        transform:
+                                                            orderBy === key && order === "asc"
+                                                                ? "rotate(180deg)"
+                                                                : "none",
+                                                        transition: "transform 0.3s",
+                                                    }}
+                                                />
+                                            </Tooltip>
+                                            {orderBy === key && (
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        marginLeft: 1,
+                                                        color:
+                                                            order === "asc"
+                                                                ? "blue"
+                                                                : "red"
+
+                                                    }}
+                                                >
+                                                    {order}
+                                                </Typography>
+                                            )}
+                                        </Box>
                                     </TableCell>
                                 ))}
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredSummary.map((row, rowIndex) => (
+                            {sortedRows.map((row, rowIndex) => (
                                 <TableRow
                                     key={rowIndex}
                                     sx={{
                                         backgroundColor: rowIndex % 2 === 0
-                                            ? isOutlier(row)
-                                                ? "rgba(255, 0, 0, 0.1)"
-                                                : "#f0f8ff"
-                                            : isOutlier(row)
-                                                ? "rgba(255, 0, 0, 0.2)"
-                                                : "white",
+                                            ? isOutlier(row) ? "rgba(255, 0, 0, 0.1)" : "#f0f8ff"
+                                            : isOutlier(row) ? "rgba(255, 0, 0, 0.2)" : "white",
                                     }}
                                 >
                                     {Object.values(row).slice(0, -1).map((value, colIndex) => (
@@ -287,25 +429,9 @@ export const AnomalyList = () => {
                 </TableContainer>
             ) : (
                 <Typography variant="body1" sx={{ textAlign: "center", marginTop: 2 }}>
-                    {showOnlyHighlighted
-                        ? "No highlighted rows to display."
-                        : "No data available to display."}
+                    {showOnlyHighlighted ? "No highlighted rows to display." : "No data available to display."}
                 </Typography>
             )}
-
-            {/* Filter Menu */}
-            <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={closeFilterMenu}
-            >
-                <MenuItem onClick={() => handleFilterChange("")}>Clear Filter</MenuItem>
-                {getColumnValues(filterColumn).map((value, index) => (
-                    <MenuItem key={index} onClick={() => handleFilterChange(value)}>
-                        {value}
-                    </MenuItem>
-                ))}
-            </Menu>
         </Box>
     );
 };

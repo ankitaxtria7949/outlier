@@ -13,6 +13,7 @@ import { MyContext } from "./Context";
 import axios from 'axios';
 import { Snackbar } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
+import DialogTitle from '@mui/material/DialogTitle';
 
 
 const Home = () => {
@@ -174,7 +175,6 @@ const Home = () => {
                     flexDirection: 'column',
                     justifyContent: 'center',
                     alignItems: 'center',
-
                     backgroundColor: '#ffffff',
                     padding: '20px',
                 }}
@@ -182,7 +182,7 @@ const Home = () => {
                 <h1 style={{ textWrap: 'nowrap', textAlign: 'center', marginTop: '10px' }}>
 
                     Welcome to the Outlier Detection Tool!</h1>
-                <Grid container spacing={4} justifyContent="center" sx={{ marginBottom: '40px', marginTop: '5px' }}>
+                <Grid container spacing={4} justifyContent="center" sx={{ marginBottom: '20px' }}>
                     {/* Card 1 */}
                     <Grid item xs={12} sm={6} md={4}>
                         <Card
@@ -292,37 +292,50 @@ const Home = () => {
 
 
                 {/* Centered Button */}
+                <DialogTitle style={{ cursor: 'pointer' }}>
+                    <input
+                        type="file"
+                        id="file"
+                        name="file"
+                        style={{ display: 'none' }}
+                        onChange={handleFileUpload} // Upload handler
+                    />
+                    <label htmlFor="file">
+                        <Button
+                            variant="contained"
+                            sx={{
+                                backgroundColor: "#003366",
+                                color: "#fff",
+                                width: "100%",
+                                height: "60px",
+                                padding: "20px",
+                                fontSize: "1.2rem",
+                                borderRadius: "8px",
+                                border: "5px solid white",
+                                textWrap: "nowrap",
+                                textTransform: "none",
+                            }}
+                            onClick={() => document.getElementById('file').click()}>
+                            Import Data
+                        </Button>
+                    </label>
 
-                <input
-                    type="file"
-                    id="file"
-                    name="file"
-                    style={{ display: 'none' }}
-                    onChange={handleFileUpload} // Upload handler
-                />
-                <label htmlFor="file">
-                    <Button
-                        variant="contained"
-                        sx={{
-                            backgroundColor: "#003366",
-                            color: "#fff",
-                            width: "100%",
-                            height: "60px",
-                            padding: "20px",
-                            fontSize: "1.2rem",
-                            borderRadius: "8px",
-                            border: "5px solid white",
-                            textWrap: "nowrap",
-                            textTransform: "none",
+                    <Typography variant="subtitle2" component="span" sx={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'blue', textDecoration: 'underline', display: 'block', marginTop: '10px', textAlign: 'center' }}
+                        onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = '/data.csv';
+                            link.setAttribute('download', 'data.csv');
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
                         }}
-                        onClick={() => document.getElementById('file').click()}>
-                        Import Data
-                    </Button>
-                </label>
-
-                {selectedFile && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', mr: 2 }}>
+                        onMouseOver={(e) => e.target.style.cursor = 'pointer'}
+                    >
+                        see the demo file
+                    </Typography>
+                    {selectedFile && (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', mr: 3 }}>
                             {selectedFile.name}
                         </Typography>
                         <IconButton onClick={handleViewFile}>
@@ -333,6 +346,8 @@ const Home = () => {
                         </IconButton>
                     </Box>
                 )}
+
+                </DialogTitle>
 
                 <Snackbar
                     open={snackbarOpen}

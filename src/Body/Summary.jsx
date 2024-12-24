@@ -27,13 +27,15 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
- 
+import IconButton from '@mui/material/IconButton';
+import DownloadIcon from '@mui/icons-material/DownloadOutlined';
+
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
- 
+
 export const Summary = () => {
   const { Outliers, Summary } = useContext(MyContext);
- 
+
   const [selectedProduct, setSelectedProduct] = useState(""); // Default to None
   const [selectedCountry, setSelectedCountry] = useState(""); // Default to None
   const [selectedForecastScenario, setSelectedForecastScenario] = useState(""); // Default to None
@@ -42,7 +44,7 @@ export const Summary = () => {
     country: "",
     forecastScenario: "",
   });
- 
+
   useEffect(() => {
     if (Array.isArray(Summary) && Summary.length > 0) {
       // Set default filter values to the first available values from the data
@@ -51,13 +53,13 @@ export const Summary = () => {
       setSelectedForecastScenario(Summary[0]['Forecast Scenario']);
     }
   }, [Summary]);
- 
+
   useEffect(() => {
     if (selectedProduct && selectedCountry && selectedForecastScenario) {
       applyFilters();
     }
   }, [selectedProduct, selectedCountry, selectedForecastScenario]);
- 
+
   const applyFilters = () => {
     setAppliedFilters({
       product: selectedProduct,
@@ -65,11 +67,15 @@ export const Summary = () => {
       forecastScenario: selectedForecastScenario,
     });
   };
- 
+
   if (!Array.isArray(Summary)) {
     return <Typography>Loading data...</Typography>;
   }
- 
+
+
+  // Function to download table data as CSV
+
+
   const filteredSummary = Summary.filter((summary) => {
     const productMatch = appliedFilters.product ? appliedFilters.product === summary.Product : true;
     const countryMatch = appliedFilters.country ? appliedFilters.country === summary.Country : true;
@@ -78,7 +84,7 @@ export const Summary = () => {
       : true;
     return productMatch && countryMatch && forecastScenarioMatch;
   });
- 
+
   const filteredOutlier = Outliers.filter((outlier) => {
     const productMatch = appliedFilters.product ? appliedFilters.product === outlier.Product : true;
     const countryMatch = appliedFilters.country ? appliedFilters.country === outlier.Country : true;
@@ -87,7 +93,7 @@ export const Summary = () => {
       : true;
     return productMatch && countryMatch && forecastScenarioMatch;
   });
- 
+
   const marketVolumeData = filteredSummary.map((summary) => summary['Market Volume']);
   const IQRUCL = filteredSummary.map((summary) =>
     summary['UCL'] === -1 ? null : summary['UCL']
@@ -101,11 +107,16 @@ export const Summary = () => {
     );
     return isOutlier ? summary['Market Volume'] : null;
   });
- 
- 
+
+  const outlierCount = outlierData.filter((value) => value !== null).length;
+
+
+
   const trendBreakData = filteredSummary.map((summary) =>
     summary['Trend Break Value'] === -1 ? null : summary['Trend Break Value']
   );
+  const outlierTB = trendBreakData.filter((value) => value !== null).length;
+
   const chartData = {
     labels: filteredSummary.map((summary) => summary.Months),
     datasets: [
@@ -145,7 +156,7 @@ export const Summary = () => {
       },
     ],
   };
- 
+
   const chartData2 = {
     labels: filteredSummary.map((summary) => summary.Months),
     datasets: [
@@ -170,40 +181,71 @@ export const Summary = () => {
       },
     ],
   };
- 
+
   const handleSelectChange = (setter, value) => {
     setter(value);
   };
- 
+
   const getUniqueValues = (key) => {
     return Array.isArray(Summary) ? [...new Set(Summary.map((summary) => summary[key]))] : [];
   };
- 
+
   const calculatePercentages = (data) => {
     return data.map((item, index) => {
       const prevMonth = data[index - 1];
       const prevQuarter = data[index - 3];
- 
+
       const MoM = prevMonth
         ? ((item['Market Volume'] - prevMonth['Market Volume']) / prevMonth['Market Volume']) * 100
         : null;
- 
+
       const QoQ = prevQuarter
         ? ((item['Market Volume'] - prevQuarter['Market Volume']) / prevQuarter['Market Volume']) * 100
         : null;
- 
+
       return { ...item, MoM, QoQ };
     });
   };
- 
+
   const summaryWithPercentages = calculatePercentages(filteredSummary);
- 
+
+  const downloadCSV = () => {
+    if (!summaryWithPercentages || summaryWithPercentages.length === 0) return;
+
+    const temp = summaryWithPercentages.map((row) => ({
+      Months: row.Months,
+      "Market Volume": row["Market Volume"],
+      MoM: row.MoM,
+      QoQ: row.QoQ,
+    }));
+    const headers = Object.keys(temp[0]).join(",");
+    const rows = temp
+      .map((row) =>
+        Object.values(row)
+          .map((value) => (value === -1 ? "" : value)) // Handle -1 as empty
+          .join(",")
+      )
+      .join("\n");
+
+    const csvContent = `${headers}\n${rows}`;
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selectedProduct}_${selectedCountry}_${selectedForecastScenario}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'row', mt: 1 }}>
       <Box sx={{ mt: 1, padding: 2 }}>
         {/* Sidebar Filters */}
         <Box
           sx={{
+            width: '900px',
+            marginTop: 1,
             display: 'flex',
             flexDirection: 'row',
             padding: 1,
@@ -211,16 +253,30 @@ export const Summary = () => {
             top: 0,
             boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
             backgroundColor: '#f5f5f5',
+            alignItems: 'center', // Ensure alignment with the box content
           }}
         >
-          <Typography variant="subtitle2" gutterTop textAlign={'center'}>
+          {/* Filters Title */}
+          <Typography
+            variant="subtitle2"
+            sx={{
+              position: 'absolute', // Position the text independently
+              top: '-12px', // Move it upward to overlap the box
+              left: '16px', // Adjust the horizontal position if needed
+              backgroundColor: '#f5f5f5', // Match the box color
+              padding: '0 8px', // Add padding for better spacing
+              transform: 'translateY(-50%)', // Fine-tune vertical alignment
+            }}
+          >
             Filters
           </Typography>
- 
+
           {/* Filters */}
           {['Product', 'Country', 'Forecast Scenario'].map((filter) => (
             <FormControl key={filter} sx={{ m: 2, width: '25ch' }}>
-              <InputLabel id={filter} sx={{ textAlign: 'center' }}>{filter}</InputLabel>
+              <InputLabel id={filter} sx={{ textAlign: 'center' }}>
+                {filter}
+              </InputLabel>
               <Select
                 labelId={filter}
                 value={
@@ -250,7 +306,9 @@ export const Summary = () => {
                   },
                 }}
               >
-                <MenuItem value="" sx={{ textAlign: 'center' }}>None</MenuItem>
+                <MenuItem value="" sx={{ textAlign: 'center' }}>
+                  None
+                </MenuItem>
                 {getUniqueValues(filter).map((item, index) => (
                   <MenuItem key={index} value={item}>
                     {item}
@@ -259,7 +317,7 @@ export const Summary = () => {
               </Select>
             </FormControl>
           ))}
- 
+
           {/* Apply Button */}
           <Button
             sx={{
@@ -277,23 +335,25 @@ export const Summary = () => {
             Apply
           </Button>
         </Box>
- 
+
+
+
         {/* Content Area */}
         <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', ml: 2, padding: 1, width: 800, overflowY: 'auto' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', ml: 2, height: 500, width: 900, overflowY: 'auto' }}>
             {/* First Chart */}
             <Paper
               sx={{
                 flex: 1,
- 
+                marginTop: 1,
                 display: 'flex',
                 flexDirection: 'column',
+                position: 'relative', // To position text over the chart
               }}
             >
-              <Typography variant="subtitle1" gutterBottom align="center">
+              <Typography variant="h6" gutterBottom align="center">
                 Outliers
               </Typography>
- 
               <Line
                 data={chartData}
                 options={{
@@ -302,6 +362,10 @@ export const Summary = () => {
                   scales: {
                     x: { display: true },
                     y: {
+                      title: {
+                        display: true,
+                        text: 'Market Volume',
+                      },
                       ticks: {
                         callback: function (value) {
                           const max = Math.max(...chartData.datasets[0].data);
@@ -318,24 +382,56 @@ export const Summary = () => {
                   },
                   plugins: {
                     legend: {
+                      display: true,
                       position: 'bottom',
                       labels: {
                         padding: 10, // Gap between x-axis and legend
                       },
                     },
+                    annotation: {
+                      annotations: {
+                        line1: {
+                          type: 'line',
+                          yMin: 100,
+                          yMax: 100,
+                          borderColor: 'rgb(255, 99, 132)',
+                          borderWidth: 2,
+                          label: {
+                            enabled: true,
+                            content: 'Random line',
+                            position: 'start',
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                          },
+                        },
+                      },
+                    },
                   },
                 }}
               />
+              {/* Custom text box over the chart */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '10%',
+                  right: '10%',
+                  backgroundColor: 'rgba(255, 255, 255, 0)',
+                  padding: '5px 10px',
+                  borderRadius: '5px',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                }}
+              >
+                Total Outliers: {outlierCount}
+              </Box>
             </Paper>
- 
+
             {/* Second Chart */}
             <Paper
               sx={{
                 flex: 1,
-                padding: 2,
                 marginTop: 5,
                 display: 'flex',
                 flexDirection: 'column',
+                position: 'relative', // To position text over the chart
               }}
             >
               <Typography variant="h6" gutterBottom align="center">
@@ -347,8 +443,17 @@ export const Summary = () => {
                   responsive: true,
                   maintainAspectRatio: true,
                   scales: {
-                    x: { display: true },
+                    x: { display: true,
+                      grid: {
+                        borderColor: 'rgba(0, 0, 0, 0.1)',
+                        borderDash: [5, 5], // Dotted lines for the grid
+                      },
+                     },
                     y: {
+                      title: {
+                        display: true,
+                        text: 'Market Volume',
+                      },
                       ticks: {
                         callback: function (value) {
                           const max = Math.max(...chartData2.datasets[0].data);
@@ -360,6 +465,10 @@ export const Summary = () => {
                           }
                           return `${(value / (format === 'K' ? 1_000 : (format === 'M' ? 1_000_000 : 1))).toFixed(2)}${format}`;
                         },
+                      },
+                      grid: {
+                        borderColor: 'rgba(0, 0, 0, 0.1)',
+                        borderDash: [5, 5], // Dotted lines for the grid
                       },
                     },
                   },
@@ -373,30 +482,50 @@ export const Summary = () => {
                   },
                 }}
               />
+              {/* Custom text box over the chart */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '10%',
+                  right: '10%',
+                  backgroundColor: 'rgba(255, 255, 255, 0)',
+                  padding: '5px 10px',
+                  borderRadius: '5px',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                }}
+              >
+               Total Trend Breaks: {outlierTB}
+              </Box>
             </Paper>
           </Box>
         </Box>
       </Box>
- 
+
+
       {/* Table */}
       <Box sx={{ display: 'flex', flexDirection: 'column', width: 400, height: 600 }}>
-        <Typography variant="subtitle1" gutterBottom textAlign={'center'}>
-          Market Summary
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Typography variant="subtitle1" gutterBottom textAlign={'center'}>
+            Market Summary
+          </Typography>
+          <IconButton onClick={downloadCSV} sx={{ marginLeft: 1 }}>
+            <DownloadIcon />
+          </IconButton>
+        </Box>
         <TableContainer>
           <Table sx={{ border: '1px solid rgba(0, 0, 0, 0.12)' }}>
             <TableHead sx={{ position: 'sticky', top: 0 }}>
               <TableRow sx={{ bgcolor: '#007bff' }}>
-                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', padding: 1.2, textAlign: 'center' }}>
+                <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', backgroundColor: '#f5f5f5', fontWeight: 'bold', padding: 1.2, textAlign: 'center', borderBottom: '1px solid rgba(0, 0, 0, 0.12)' }}>
                   Months
                 </TableCell>
-                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', textAlign: 'center', padding: 1.2 }}>
+                <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', backgroundColor: '#f5f5f5', fontWeight: 'bold', textAlign: 'center', padding: 1.2, borderBottom: '1px solid rgba(0, 0, 0, 0.12)' }}>
                   Market Volume
                 </TableCell>
-                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', padding: 1.2, textAlign: 'center' }}>
+                <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', backgroundColor: '#f5f5f5', fontWeight: 'bold', padding: 1.2, textAlign: 'center', borderBottom: '1px solid rgba(0, 0, 0, 0.12)' }}>
                   Month on Month %
                 </TableCell>
-                <TableCell sx={{ backgroundColor: '#f5f5f5', fontWeight: 'bold', padding: 1.2, textAlign: 'center' }}>
+                <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', backgroundColor: '#f5f5f5', fontWeight: 'bold', padding: 1.2, textAlign: 'center', borderBottom: '1px solid rgba(0, 0, 0, 0.12)' }}>
                   Quarter on Quarter %
                 </TableCell>
               </TableRow>
@@ -404,22 +533,19 @@ export const Summary = () => {
             <TableBody>
               {summaryWithPercentages.map((row, index) => {
                 const ismyOutlier = filteredOutlier.some(outlier => outlier.Months === row.Months);
- 
-                // Check if this row is an outlier
-               
- 
+
                 return (
                   <TableRow
                     key={index}
                     sx={{
-                      bgcolor: ismyOutlier ? 'rgba(255, 0, 0, 0.2)' : index % 2 === 0 ? '#f0f8ff' : 'white', // Highlight outlier rows with yellow
+                      bgcolor: ismyOutlier ? 'rgba(255, 0, 0, 0.2)' : index % 2 === 0 ? '#f0f8ff' : 'white',
                     }}
                   >
                     <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', fontSize: '0.85rem', textAlign: 'center', padding: 1 }}>
                       {row.Months}
                     </TableCell>
                     <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', fontSize: '0.85rem', textAlign: 'center', padding: 0.5 }}>
-                      {row['Market Volume'].toFixed(2)}
+                      {row['Market Volume'].toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell sx={{ borderRight: '1px solid rgba(0, 0, 0, 0.12)', fontSize: '0.85rem', textAlign: 'center', padding: 0.5 }}>
                       {row.MoM !== null ? `${row.MoM.toFixed(2)}%` : '-'}
