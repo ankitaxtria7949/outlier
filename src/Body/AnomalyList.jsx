@@ -22,6 +22,10 @@ import Tooltip from "@mui/material/Tooltip";
 import { MyContext } from "./Context";
 import { useNavigate } from "react-router-dom";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import Checkbox from "@mui/material/Checkbox";
+import { Checkroom } from "@mui/icons-material";
+import NativeSelect from '@mui/material/NativeSelect';
+
 
 export const AnomalyList = () => {
     const { Summary, Outliers } = useContext(MyContext);
@@ -31,6 +35,8 @@ export const AnomalyList = () => {
     const [order, setOrder] = useState("asc");
     const [orderBy, setOrderBy] = useState("");
     const [viewMode, setViewMode] = useState("all"); // 'all', 'outliers', 'withoutOutliers'
+    const [checkCol, setCheckCol] = useState(false);
+    const [dropdownCol, setDropdownCol] = useState("No");
 
 
 
@@ -41,12 +47,6 @@ export const AnomalyList = () => {
         );
     };
 
-    // Filter rows based on toggle and active filters
-    const applyFilters = (row) => {
-        return Object.entries(filters).every(([key, value]) =>
-            value ? row[key].toString() === value : true
-        );
-    };
     const filteredSummary = Summary.filter((row) => {
         if (viewMode === "outliers") return isOutlier(row);
         if (viewMode === "withoutOutliers") return !isOutlier(row);
@@ -57,9 +57,6 @@ export const AnomalyList = () => {
         )
     );
 
-
-
-        
     // Function to handle filter changes
     const handleFilterChange = (column, value) => {
         setFilters((prev) => ({
@@ -103,10 +100,10 @@ export const AnomalyList = () => {
     const downloadCSV = () => {
         if (!filteredSummary || filteredSummary.length === 0) return;
 
-        const headers = Object.keys(filteredSummary[0])
+        let headers = Object.keys(filteredSummary[0])
             .slice(0, -1) // Exclude the last column
             .join(",");
-        const rows = filteredSummary
+        let rows = filteredSummary
             .map((row) =>
                 Object.values(row)
                     .slice(0, -1) // Exclude the last column
@@ -114,6 +111,29 @@ export const AnomalyList = () => {
                     .join(",")
             )
             .join("\n");
+
+        if (viewMode === "outliers") {
+            headers += ",RevisedVolume";
+            rows = rows
+                .split("\n")
+                .map((row) => {
+                    const rowArray = row.split(",");
+                    const ky = rowArray.slice(0, 4).join("|");
+                    rowArray.push(revisedVolume[ky]);
+                    return rowArray.join(",");
+                })
+                .join("\n");
+            headers += ",Changed To";
+            rows = rows
+                .split("\n")
+                .map((row) => {
+                    const rowArray = row.split(",");
+                    const ky = rowArray.slice(0, 4).join("|");
+                    rowArray.push(dropdownRow[ky]);
+                    return rowArray.join(",");
+                })
+                .join("\n");
+        }
 
         const csvContent = `${headers}\n${rows}`;
         const blob = new Blob([csvContent], { type: "text/csv" });
@@ -153,14 +173,78 @@ export const AnomalyList = () => {
     };
     const result = findMaxOutlierCombination();
 
-    const totalMarketVolume = Summary.reduce((sum, item) => {
+    const totalMarketVolume = filteredSummary.reduce((sum, item) => {
         return sum + (item['Market Volume'] || 0);
     }, 0);
 
+    const temppp = sortedRows;
+    const [checkRow, setCheckRow] = useState(
+        temppp.reduce((acc, item) => {
+            acc[`${item.Product}|${item.Country}|${item["Forecast Scenario"]}|${item.Months}`] = false;
+            return acc;
+        }, {})
+    );
+    const [dropdownRow, setDropdownRow] = useState(
+        temppp.reduce((acc, item) => {
+            acc[`${item.Product}|${item.Country}|${item["Forecast Scenario"]}|${item.Months}`] = "No";
+            return acc;
+        }, {})
+    );
+    const [revisedVolume, setRevisedVolume] = useState(
+        temppp.reduce((acc, item) => {
+            acc[`${item.Product}|${item.Country}|${item["Forecast Scenario"]}|${item.Months}`] =
+                item["Market Volume"] || 0;
+            return acc;
+        }, {})
+    );
+
+
+
+    const handleCheckCol = () => {
+        setCheckCol(!checkCol);
+        Object.keys(checkRow).forEach(key => {
+            if (sortedRows.some(row =>
+                `${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}` === key)) {
+                setCheckRow(prevState => ({
+                    ...prevState,
+                    [key]: checkCol ? false : true
+                }));
+            }
+        });
+    }
+    const handleDropDownCol = (evt) => {
+        Object.keys(dropdownRow).forEach(key => {
+            if (sortedRows.some(row =>
+                `${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}` === key)) {
+                if (checkRow[key]) {
+                    setDropdownRow(prevState => ({
+                        ...prevState,
+                        [key]: evt
+                    }));
+                }
+            }
+        });
+        Object.keys(revisedVolume).forEach(key => {
+            const row = sortedRows.find(row =>
+                `${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}` === key);
+            if (row && checkRow[key]) {
+                setRevisedVolume(prevState => ({
+                    ...prevState,
+                    [key]: evt === 'No' ? row['Market Volume'] : evt === 'LCL' ? row.LCL : evt === 'UCL' ? row.UCL : evt === 'Nearest' ? (Math.abs(row.UCL - row["Market Volume"]) > Math.abs(row.LCL - row["Market Volume"]) ? row.LCL : row.UCL) : 0
+                }));
+            }
+        });
+        setDropdownCol(evt);
+    }
+    const handleDropDown = (row, evt) => {
+        setDropdownRow({ ...dropdownRow, [`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`]: evt });
+        setRevisedVolume({ ...revisedVolume, [`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`]: evt === 'No' ? row['Market Volume'] : evt === 'LCL' ? row.LCL : evt === 'UCL' ? row.UCL : evt === 'Nearest' ? (Math.abs(row.UCL - row["Market Volume"]) > Math.abs(row.LCL - row["Market Volume"]) ? row.LCL : row.UCL) : 0 });
+
+    }
     return (
         <Box sx={{ padding: 2 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-            <ButtonGroup variant="contained" color="primary">
+                <ButtonGroup variant="contained" color="primary">
                     <Button
                         onClick={() => setViewMode("all")}
                         variant={viewMode === "all" ? "contained" : "outlined"}
@@ -255,7 +339,7 @@ export const AnomalyList = () => {
                                 (totalMarketVolume / 1000000).toFixed(2) + 'M'}
                     </Typography>
                     <Typography variant="body1" sx={{ color: "black" }}>
-                        across the data
+                        {viewMode === "outliers" ? " across the Outliers data" : viewMode === "withoutOutliers" ? "across the Without Outliers data " : "across the data"}
                     </Typography>
                 </Box>
                 <Box
@@ -282,11 +366,6 @@ export const AnomalyList = () => {
                         In <b>{result.Country}</b> for Product <b>{result.Product}</b> and  <b>{result.ForecastScenario}</b> Forecast Scenario
                     </Typography>
                 </Box>
-                
-
-
-
-
             </Box>
 
             {/* Filter Dropdowns for First Three Columns */}
@@ -331,10 +410,29 @@ export const AnomalyList = () => {
 
             {/* Table */}
             {sortedRows && sortedRows.length > 0 ? (
+
                 <TableContainer component={Paper} sx={{ maxHeight: "calc(100vh - 64px)", overflow: "auto" }}>
                     <Table stickyHeader>
                         <TableHead>
                             <TableRow>
+                                {/* Add Checkbox column header if viewMode is "Outliers" */}
+                                {viewMode === "outliers" && (
+                                    <TableCell
+                                        sx={{
+                                            fontWeight: "bold",
+                                            backgroundColor: "#f5f5f5",
+                                            textAlign: "center",
+                                            maxWidth: 150,
+                                        }}
+                                    >
+                                        <Checkbox
+                                            checked={checkCol}
+                                            onChange={handleCheckCol}
+                                        />
+
+                                    </TableCell>
+                                )}
+                                {/* Render column headers */}
                                 {Object.keys(Summary[0]).slice(0, -1).map((key, index) => (
                                     <TableCell
                                         key={index}
@@ -349,7 +447,6 @@ export const AnomalyList = () => {
                                             textOverflow: "ellipsis",
                                         }}
                                     >
-
                                         <Box
                                             sx={{
                                                 display: "flex",
@@ -383,11 +480,7 @@ export const AnomalyList = () => {
                                                     variant="body2"
                                                     sx={{
                                                         marginLeft: 1,
-                                                        color:
-                                                            order === "asc"
-                                                                ? "blue"
-                                                                : "red"
-
+                                                        color: order === "asc" ? "blue" : "red",
                                                     }}
                                                 >
                                                     {order}
@@ -396,6 +489,46 @@ export const AnomalyList = () => {
                                         </Box>
                                     </TableCell>
                                 ))}
+                                {viewMode === "outliers" && (
+                                    <TableCell
+                                        sx={{
+                                            fontWeight: "bold",
+                                            backgroundColor: "#f5f5f5",
+                                            textAlign: "center",
+                                            maxWidth: 150,
+                                        }}
+                                    >
+                                        Revised Market Volume
+                                    </TableCell>
+                                )}
+                                {viewMode === "outliers" && (
+                                    <TableCell
+                                        sx={{
+                                            fontWeight: "bold",
+                                            backgroundColor: "#f5f5f5",
+                                            textAlign: "center",
+                                            maxWidth: 150,
+                                        }}
+                                    >
+                                        <FormControl fullWidth>
+                                            <InputLabel variant="standard" htmlFor="uncontrolled-native">
+                                                Options
+                                            </InputLabel>
+                                            <NativeSelect
+                                                value={dropdownCol}
+                                                onChange={(e) => {
+                                                    handleDropDownCol(e.target.value);
+                                                }}
+
+                                            >
+                                                <option value={"LCL"}>Change To LCL</option>
+                                                <option value={"UCL"}>Change to UCL</option>
+                                                <option value={"Nearest"}>Change To Nearest</option>
+                                                <option value={"No"}>No Change</option>
+                                            </NativeSelect>
+                                        </FormControl>
+                                    </TableCell>
+                                )}
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -408,6 +541,19 @@ export const AnomalyList = () => {
                                             : isOutlier(row) ? "rgba(255, 0, 0, 0.2)" : "white",
                                     }}
                                 >
+                                    {/* Add Checkbox column if viewMode is "Outliers" */}
+                                    {viewMode === "outliers" && (
+                                        <TableCell
+                                            sx={{
+                                                textAlign: "center",
+                                            }}
+                                        >
+                                            <Checkbox
+                                                checked={checkRow[`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`]}
+                                                onChange={() => setCheckRow({ ...checkRow, [`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`]: !checkRow[`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`] })}
+                                            />
+                                        </TableCell>
+                                    )}
                                     {Object.values(row).slice(0, -1).map((value, colIndex) => (
                                         <TableCell
                                             key={colIndex}
@@ -418,10 +564,46 @@ export const AnomalyList = () => {
                                                 textOverflow: "ellipsis",
                                                 textAlign: "center",
                                             }}
+
                                         >
                                             {value === -1 ? "" : value}
                                         </TableCell>
                                     ))}
+                                    {viewMode === "outliers" && (
+                                        <TableCell
+                                            sx={{
+                                                fontWeight: "bold",
+                                                textAlign: "center",
+                                                maxWidth: 150,
+                                            }}
+                                        >
+                                            {revisedVolume[`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`]}
+                                        </TableCell>
+                                    )}
+                                    {viewMode === "outliers" && (
+                                        <TableCell
+                                            sx={{
+                                                fontWeight: "bold",
+                                                textAlign: "center",
+                                                maxWidth: 150,
+                                            }}
+                                        >
+                                            <FormControl fullWidth>
+                                                <InputLabel variant="standard" htmlFor="uncontrolled-native">
+                                                    Options
+                                                </InputLabel>
+                                                <NativeSelect
+                                                    value={dropdownRow[`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`]}
+                                                    onChange={(e) => handleDropDown(row, e.target.value)}
+                                                >
+                                                    <option value={"LCL"}>Change To LCL</option>
+                                                    <option value={"UCL"}>Change to UCL</option>
+                                                    <option value={"Nearest"}>Change To Nearest</option>
+                                                    <option value={"No"}>No Change</option>
+                                                </NativeSelect>
+                                            </FormControl>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -432,6 +614,7 @@ export const AnomalyList = () => {
                     {showOnlyHighlighted ? "No highlighted rows to display." : "No data available to display."}
                 </Typography>
             )}
+
         </Box>
     );
 };
