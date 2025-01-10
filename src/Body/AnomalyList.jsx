@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import {
     Table,
     TableBody,
@@ -241,6 +241,24 @@ export const AnomalyList = () => {
         setRevisedVolume({ ...revisedVolume, [`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`]: evt === 'No' ? row['Market Volume'] : evt === 'LCL' ? row.LCL : evt === 'UCL' ? row.UCL : evt === 'Nearest' ? (Math.abs(row.UCL - row["Market Volume"]) > Math.abs(row.LCL - row["Market Volume"]) ? row.LCL : row.UCL) : 0 });
 
     }
+    const handleCheckRow = (row) => {
+        const key = `${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`;    
+        setCheckRow((prevCheckRow) => {
+            const updatedCheckRow = { ...prevCheckRow, [key]: !prevCheckRow[key] };    
+            const hasUncheckedRow = Object.keys(updatedCheckRow).some((rowKey) => {
+                return (
+                    sortedRows.some(
+                        (sortedRow) =>
+                            `${sortedRow.Product}|${sortedRow.Country}|${sortedRow["Forecast Scenario"]}|${sortedRow.Months}` === rowKey
+                    ) && !updatedCheckRow[rowKey]
+                );
+            });
+            setCheckCol(!hasUncheckedRow);
+            return updatedCheckRow; 
+        });
+    };
+    
+    
     return (
         <Box sx={{ padding: 2 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
@@ -512,9 +530,10 @@ export const AnomalyList = () => {
                                     >
                                         <FormControl fullWidth>
                                             <InputLabel variant="standard" htmlFor="uncontrolled-native">
-                                                Options
+                                                Change Market Volume To
                                             </InputLabel>
                                             <NativeSelect
+                                             sx={{ fontSize: '0.75rem' }}
                                                 value={dropdownCol}
                                                 onChange={(e) => {
                                                     handleDropDownCol(e.target.value);
@@ -550,7 +569,7 @@ export const AnomalyList = () => {
                                         >
                                             <Checkbox
                                                 checked={checkRow[`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`]}
-                                                onChange={() => setCheckRow({ ...checkRow, [`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`]: !checkRow[`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`] })}
+                                                onChange={() => handleCheckRow(row)}
                                             />
                                         </TableCell>
                                     )}
@@ -590,9 +609,10 @@ export const AnomalyList = () => {
                                         >
                                             <FormControl fullWidth>
                                                 <InputLabel variant="standard" htmlFor="uncontrolled-native">
-                                                    Options
+                                                   Change To
                                                 </InputLabel>
                                                 <NativeSelect
+                                                    sx={{ fontSize: '0.775rem' }}
                                                     value={dropdownRow[`${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`]}
                                                     onChange={(e) => handleDropDown(row, e.target.value)}
                                                 >

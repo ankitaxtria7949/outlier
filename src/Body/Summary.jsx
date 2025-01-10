@@ -29,13 +29,15 @@ import {
 } from 'chart.js';
 import IconButton from '@mui/material/IconButton';
 import DownloadIcon from '@mui/icons-material/DownloadOutlined';
+import { useNavigate } from 'react-router-dom';
+
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export const Summary = () => {
   const { Outliers, Summary } = useContext(MyContext);
-
+  const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState(""); // Default to None
   const [selectedCountry, setSelectedCountry] = useState(""); // Default to None
   const [selectedForecastScenario, setSelectedForecastScenario] = useState(""); // Default to None
@@ -270,6 +272,15 @@ export const Summary = () => {
           >
             Filters
           </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ ml: 1, fontSize: '0.6rem' }}
+            onClick={() => navigate("/anomaly-list")}
+          >
+            Anomaly List
+          </Button>
+
 
           {/* Filters */}
           {['Product', 'Country', 'Forecast Scenario'].map((filter) => (
@@ -443,12 +454,13 @@ export const Summary = () => {
                   responsive: true,
                   maintainAspectRatio: true,
                   scales: {
-                    x: { display: true,
+                    x: {
+                      display: true,
                       grid: {
                         borderColor: 'rgba(0, 0, 0, 0.1)',
                         borderDash: [5, 5], // Dotted lines for the grid
                       },
-                     },
+                    },
                     y: {
                       title: {
                         display: true,
@@ -494,7 +506,7 @@ export const Summary = () => {
                   boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
                 }}
               >
-               Total Trend Breaks: {outlierTB}
+                Total Trend Breaks: {outlierTB}
               </Box>
             </Paper>
           </Box>
