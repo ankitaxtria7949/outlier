@@ -1,5 +1,6 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import ReactJoyride from 'react-joyride';
 import { useContext } from 'react';
 import { Card, CardContent, Typography, CardActionArea, Grid, Box, Button } from '@mui/material';
 import { TrendingUp, TaskAlt } from '@mui/icons-material';
@@ -26,6 +27,19 @@ const Home = () => {
     const { Outliers, setOutliers } = useContext(MyContext);
     const { Summary, setSummary } = useContext(MyContext);
     const [Loading, setLoading] = useState(false);
+    const [tutorialActive, setTutorialActive] = useState(false);
+   
+
+
+    // Start the tutorial after 1 seconds automatically
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setTutorialActive(true);  // Start the tutorial
+        }, 1000); // Start after 1 seconds
+
+        return () => clearTimeout(timer); // Cleanup the timer
+
+    });
 
 
 
@@ -144,8 +158,94 @@ const Home = () => {
         }
     };
 
+
+
+
+
+    const steps = [
+        {
+            target: '.import-data-btn',
+            content: 'Click here to upload your data file!',
+            placement: 'bottom',
+        },
+        {
+            target: '.outlier-detection-card',
+            content: 'Click here to detect outliers in your data.',
+            placement: 'top',
+        },
+        {
+            target: '.trendbreak-card',
+            content: 'Click here to see disruptions or trends in your data.',
+            placement: 'top',
+        },
+        {
+            target: '.validation-card',
+            content: 'Click here to perform data validation to ensure its accuracy.',
+            placement: 'top',
+        },
+        {
+            target: '.view-file-btn',
+            content: 'Click to view the uploaded file.',
+            placement: 'left',
+        },
+    ];
+
     return (
         <>
+            <ReactJoyride
+                steps={steps}
+                continuous={true}
+                showSkipButton={true}
+                run={tutorialActive}
+                locale={{
+                    skip: "Skip Tutorial", // Change "Skip" to "Skip Tutorial"
+                    last: "Finish",        // Optional: customize other button texts
+                }}
+
+                styles={{
+                    beacon: {
+                       },
+                       
+                    options: {
+                        zIndex: 10000,
+                        borderRadius: '5px',
+                        boxShadow: '0px 0px 5px rgba(0, 0, 0, 0.3)',
+                        width: '300px', // Reduce the width of the box
+                        height: '100px',
+                        padding: '10px', 
+                        fontSize: '14px',                  
+
+                    },
+                    buttonNext: {
+                        backgroundColor: '#4CAF50',
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        borderRadius: '10px',
+                        fontSize: '14px',
+                        padding: '10px ',
+                    },
+                    buttonBack: {
+                        backgroundColor: '#2E4053',
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                        borderRadius: '10px',
+                        padding: '10px ',
+                    },
+                    buttonSkip: {
+                        backgroundColor: '#f44336',
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                        borderRadius: '10px',
+                        padding: '10px ',
+                        wordSpacing: '-0.5px',
+                        
+                    },
+
+                }}
+
+            />
             {Loading &&
                 <Box
                     sx={{
@@ -197,6 +297,7 @@ const Home = () => {
                                 border: '1px solid #ddd',
                                 '&:hover': { boxShadow: '0px 8px 30px rgba(0, 0, 0, 0.2)' },
                             }}
+                            className="outlier-detection-card"
                         >
                             <CardActionArea sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} onClick={() => { handleshowresults("outlier"); }}>
                                 <ScatterPlotIcon sx={{ fontSize: 50, color: 'black', marginTop: '20px' }} />
@@ -234,6 +335,7 @@ const Home = () => {
                                 border: '1px solid #ddd',
                                 '&:hover': { boxShadow: '0px 8px 30px rgba(0, 0, 0, 0.2)' },
                             }}
+                            className='trendbreak-card'
                         >
                             <CardActionArea sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }} onClick={() => { handleshowresults("trendbreak"); }}>
                                 <TrendingUp sx={{ fontSize: 50, color: 'black', marginTop: '20px' }} />
@@ -264,7 +366,9 @@ const Home = () => {
                                 borderRadius: '8px',
                                 border: '1px solid #ddd',
                                 '&:hover': { boxShadow: '0px 8px 30px rgba(0, 0, 0, 0.2)' },
+
                             }}
+                            className='validation-card'
                         >
                             <CardActionArea sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }} onClick={() => { handleshowresults("validation"); }}>
                                 <TaskAlt sx={{ fontSize: 50, color: 'black', marginTop: '20px' }} />
@@ -315,7 +419,8 @@ const Home = () => {
                                 textWrap: "nowrap",
                                 textTransform: "none",
                             }}
-                            onClick={() => document.getElementById('file').click()}>
+                            onClick={() => document.getElementById('file').click()}
+                            className='import-data-btn'>
                             Import Data
                         </Button>
                     </label>
@@ -330,22 +435,38 @@ const Home = () => {
                             document.body.removeChild(link);
                         }}
                         onMouseOver={(e) => e.target.style.cursor = 'pointer'}
+                        className='view-file-btn'
                     >
-                        see the demo file
+                        See the demo file
                     </Typography>
+
+
+                    {/* <Typography
+                        variant="subtitle2"
+                        component="span"
+                        sx={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'blue', textDecoration: 'underline', display: 'block', marginTop: '10px', textAlign: 'center' }}
+                        onClick={() => {
+                            setTutorialActive(true); // Trigger tutorial manually
+
+                        }}
+                        onMouseOver={(e) => e.target.style.cursor = 'pointer'}
+                    >
+                        View Tutorial
+                    </Typography> */}
+
                     {selectedFile && (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', mr: 3 }}>
-                            {selectedFile.name}
-                        </Typography>
-                        <IconButton onClick={handleViewFile}>
-                            <VisibilityIcon />
-                        </IconButton>
-                        <IconButton onClick={handleRemoveDataFile}>
-                            <DeleteIcon />
-                        </IconButton>
-                    </Box>
-                )}
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Typography variant="body2" sx={{ color: 'text.secondary', mr: 3 }}>
+                                {selectedFile.name}
+                            </Typography>
+                            <IconButton onClick={handleViewFile}>
+                                <VisibilityIcon />
+                            </IconButton>
+                            <IconButton onClick={handleRemoveDataFile}>
+                                <DeleteIcon />
+                            </IconButton>
+                        </Box>
+                    )}
 
                 </DialogTitle>
 
