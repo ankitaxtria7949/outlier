@@ -2,10 +2,7 @@ import React from 'react'
 import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import axtriaImage from '../assets/axtria-logo.png';
-import HomeIcon from '@mui/icons-material/Home';
- 
- 
- 
+import HomeIcon from '@mui/icons-material/Home'; 
  
 export const Header = () => {
   return (

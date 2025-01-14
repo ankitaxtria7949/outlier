@@ -16,8 +16,11 @@ import {
     Select,
     MenuItem,
     InputLabel,
+   
     ButtonGroup,
 } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
+
 import Tooltip from "@mui/material/Tooltip";
 import { MyContext } from "./Context";
 import { useNavigate } from "react-router-dom";
@@ -25,6 +28,9 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import Checkbox from "@mui/material/Checkbox";
 import { Checkroom } from "@mui/icons-material";
 import NativeSelect from '@mui/material/NativeSelect';
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import "./AnomalyList.css";
+
 
 
 export const AnomalyList = () => {
@@ -37,6 +43,8 @@ export const AnomalyList = () => {
     const [viewMode, setViewMode] = useState("all"); // 'all', 'outliers', 'withoutOutliers'
     const [checkCol, setCheckCol] = useState(false);
     const [dropdownCol, setDropdownCol] = useState("No");
+    const [tutorialActive, setTutorialActive] = useState(false);
+    const [currentStep, setCurrentStep] = useState(0); // Track the current step in the tutorial
 
 
 
@@ -242,9 +250,9 @@ export const AnomalyList = () => {
 
     }
     const handleCheckRow = (row) => {
-        const key = `${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`;    
+        const key = `${row.Product}|${row.Country}|${row["Forecast Scenario"]}|${row.Months}`;
         setCheckRow((prevCheckRow) => {
-            const updatedCheckRow = { ...prevCheckRow, [key]: !prevCheckRow[key] };    
+            const updatedCheckRow = { ...prevCheckRow, [key]: !prevCheckRow[key] };
             const hasUncheckedRow = Object.keys(updatedCheckRow).some((rowKey) => {
                 return (
                     sortedRows.some(
@@ -254,11 +262,225 @@ export const AnomalyList = () => {
                 );
             });
             setCheckCol(!hasUncheckedRow);
-            return updatedCheckRow; 
+            return updatedCheckRow;
         });
     };
-    
-    
+    useEffect(() => {
+        let isMounted = true;
+        const timer = setTimeout(() => {
+            if (isMounted) {
+                setTutorialActive(true);  // Start the tutorial
+            }
+        }, 1000); // Start after 1 seconds
+
+        return () => {
+            clearTimeout(timer);
+            isMounted = false;
+        }; // Cleanup the timer
+
+    }, []); // Run only once
+
+    const showTutorial = (step) => {
+        const targetElement = document.querySelector(step.target);
+
+        const popup = document.createElement('div');
+        popup.classList.add('tutorial-popup', step.placement);
+        popup.textContent = step.content;
+        targetElement.style.boxShadow = '0px 0px 10px 0px rgba(0,0,0,0.75)';
+        targetElement.style.border = '3px solid navy';
+
+        // Position the popup based on the target element and placement
+        const rect = targetElement.getBoundingClientRect();
+        let top, left;
+
+        if (step.placement === 'top') {
+            top = rect.top - popup.offsetHeight;
+            left = rect.left + rect.width / 2 - popup.offsetWidth / 2;
+        } else if (step.placement === 'bottom') {
+            top = rect.bottom + 10;
+            left = rect.left + rect.width / 2 - popup.offsetWidth / 2;
+        } else if (step.placement === 'left') {
+            top = rect.top + rect.height / 2 - popup.offsetHeight / 2;
+            left = rect.left - 350;
+        } else if (step.placement === 'right') {
+            top = rect.top + rect.height / 2 - popup.offsetHeight / 2;
+            left = rect.right + 10;
+        }
+
+        popup.style.top = `${top}px`;
+        popup.style.left = `${left}px`;
+
+        document.body.appendChild(popup);
+
+        // Add a button to close the popup
+        const closeButton = document.createElement('button');
+        closeButton.textContent = currentStep === steps.length - 1 ? 'Finish' : 'Skip Tutorial';
+        closeButton.style.marginRight = '40px';
+        closeButton.style.padding = '5px 10px';
+        closeButton.style.borderRadius = '5px';
+
+        closeButton.addEventListener('click', () => {
+            popup.remove();
+            setTutorialActive(false);
+            
+            targetElement.style.border = '';
+            targetElement.style.boxShadow = '';
+
+        });
+        console.log("tutorial state", tutorialActive)
+
+        popup.appendChild(closeButton);
+
+        const previousButton = document.createElement('button');
+        previousButton.textContent = 'Previous';
+        previousButton.style.padding = '5px 10px';
+        previousButton.style.marginRight = '5px';
+        previousButton.style.borderRadius = '5px';
+        previousButton.disabled = currentStep === 0; // Disable if first step
+        previousButton.style.backgroundColor = previousButton.disabled ? 'grey' : 'navy';
+        previousButton.addEventListener('click', () => {
+            popup.remove();
+
+            setCurrentStep(currentStep - 1); // Move to previous step
+            targetElement.style.border = '';
+            targetElement.style.boxShadow = '';
+        });
+
+        const nextButton = document.createElement('button');
+        nextButton.textContent = 'Next';
+        nextButton.style.padding = '5px 10px';
+        nextButton.style.borderRadius = '5px';
+        nextButton.disabled = currentStep === steps.length - 1; // Disable if last step
+        nextButton.style.backgroundColor = nextButton.disabled ? 'grey' : 'green';
+        nextButton.addEventListener('click', () => {
+            popup.remove();
+
+            setCurrentStep(currentStep + 1); // Move to next step
+            targetElement.style.border = '';
+            targetElement.style.boxShadow = '';
+        });
+
+        const buttons = document.createElement('div');
+        buttons.style.display = 'flex';
+        buttons.style.marginTop = '20px';
+        buttons.style.justifyContent = 'space-between';
+        buttons.style.width = '100%';
+        buttons.appendChild(closeButton);
+
+        const flexEndButtons = document.createElement('div');
+        flexEndButtons.style.display = 'flex';
+        flexEndButtons.appendChild(previousButton);
+        flexEndButtons.appendChild(nextButton);
+        buttons.appendChild(flexEndButtons);
+
+        popup.appendChild(buttons); // Insert the buttons after the text
+    };
+
+
+    const handleStartTutorial = () => {
+        setTutorialActive(true);
+        setCurrentStep(0); // Start from the first step
+    };
+
+    useEffect(() => {
+        if (tutorialActive && currentStep < steps.length) {
+            showTutorial(steps[currentStep]); // Show the current step
+        }
+    }, [tutorialActive, currentStep]);
+
+    const steps = [
+        {
+            index: 0,
+            target: '.all-data-btn',
+            content: 'Clicking here shows the entire data with highlighted Outliers!',
+            placement: 'right',
+        },
+        {
+            index: 1,
+            target: '.only-outlier-btn',
+            content: 'Click here to see only the outliers in your data.',
+            placement: 'right',
+        },
+        {
+            index: 2,
+            target: '.without-outlier-btn',
+            content: 'Click here to see the data with outliers removed',
+            placement: 'right',
+        },
+        {
+            index: 3,
+            target: '.filter-table',
+            content: 'Use these drop down filters to filter the table displayed below',
+            placement: 'right',
+        },
+        {
+            index: 4,
+            target: '.sorting-icon',
+            content: 'Use this to sort your data in ascending or descending order.',
+            placement: 'right',
+        },
+        {
+            index: 5,
+            target: '.download-file-btn',
+            content: 'Click to download the table displayed as a CSV file.',
+            placement: 'left',
+        },
+        {
+            index: 6,
+            target: '.summary-btn',
+            content: 'Click to view the summary page.',
+            placement: 'left',
+        },
+
+    ];
+
+    const steps2 = [
+        {
+            index: 0,
+            target: '.',
+            content: 'Clicking here shows the entire data with highlighted Outliers!',
+            placement: 'right',
+        },
+        {
+            index: 1,
+            target: '.only-outlier-btn',
+            content: 'Click here to see only the outliers in your data.',
+            placement: 'right',
+        },
+        {
+            index: 2,
+            target: '.without-outlier-btn',
+            content: 'Click here to see the data with outliers removed',
+            placement: 'right',
+        },
+        {
+            index: 3,
+            target: '.filter-table',
+            content: 'Use these drop down filters to filter the table displayed below',
+            placement: 'right',
+        },
+        {
+            index: 4,
+            target: '.sorting-icon',
+            content: 'Use this to sort your data in ascending or descending order.',
+            placement: 'right',
+        },
+        {
+            index: 5,
+            target: '.download-file-btn',
+            content: 'Click to download the table displayed as a CSV file.',
+            placement: 'left',
+        },
+        {
+            index: 6,
+            target: '.summary-btn',
+            content: 'Click to view the summary page.',
+            placement: 'left',
+        },
+
+    ];
+
+
     return (
         <Box sx={{ padding: 2 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
@@ -266,18 +488,21 @@ export const AnomalyList = () => {
                     <Button
                         onClick={() => setViewMode("all")}
                         variant={viewMode === "all" ? "contained" : "outlined"}
+                        className="all-data-btn"
                     >
                         All Data
                     </Button>
                     <Button
                         onClick={() => setViewMode("outliers")}
                         variant={viewMode === "outliers" ? "contained" : "outlined"}
+                        className="only-outlier-btn"
                     >
                         Outliers Only
                     </Button>
                     <Button
                         onClick={() => setViewMode("withoutOutliers")}
                         variant={viewMode === "withoutOutliers" ? "contained" : "outlined"}
+                        className="without-outlier-btn"
                     >
                         Without Outliers
                     </Button>
@@ -288,10 +513,10 @@ export const AnomalyList = () => {
                     </Typography>
                 </Box>
                 <Box>
-                    <Button variant="contained" sx={{ mr: 2 }} onClick={downloadCSV}>
+                    <Button variant="contained" sx={{ mr: 2 }} onClick={downloadCSV} className="download-file-btn">
                         Download CSV
                     </Button>
-                    <Button variant="contained" onClick={() => { navigate("/summary"); }}>
+                    <Button variant="contained" onClick={() => { navigate("/summary"); }} className="summary-btn">
                         Summary
                     </Button>
                 </Box>
@@ -393,9 +618,12 @@ export const AnomalyList = () => {
                 boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
                 backgroundColor: '#f5f5f5',
                 mb: 2
-            }}>
+            }}
+
+            >
+
                 {["Product", "Country", "Forecast Scenario"].map((column, index) => (
-                    <FormControl key={index} sx={{ m: 2, width: '20ch' }} size='small'>
+                    <FormControl key={index} sx={{ m: 2, width: '20ch' }} size='small' className="filter-table" >
                         <InputLabel>{column}</InputLabel>
                         <Select
                             value={filters[column] || ""}
@@ -424,6 +652,18 @@ export const AnomalyList = () => {
                         </Select>
                     </FormControl>
                 ))}
+                <Box sx={{ flex: 1, display: "flex", justifyContent: 'flex-end', alignItems: 'center', m: 'auto' }}>
+                    <IconButton
+                        onClick={handleStartTutorial}
+                        sx={{
+                            color: 'black' ,mr: 2,                            
+                        }}
+                    >
+                        <HelpOutlineIcon sx ={{'&:hover': {
+                                color: 'navy',
+                            },}} />
+                    </IconButton>
+                </Box>
             </Box>
 
             {/* Table */}
@@ -491,6 +731,8 @@ export const AnomalyList = () => {
                                                                 : "none",
                                                         transition: "transform 0.3s",
                                                     }}
+                                                    className="sorting-icon"
+
                                                 />
                                             </Tooltip>
                                             {orderBy === key && (
@@ -533,7 +775,7 @@ export const AnomalyList = () => {
                                                 Change Market Volume To
                                             </InputLabel>
                                             <NativeSelect
-                                             sx={{ fontSize: '0.75rem' }}
+                                                sx={{ fontSize: '0.75rem' }}
                                                 value={dropdownCol}
                                                 onChange={(e) => {
                                                     handleDropDownCol(e.target.value);
@@ -609,7 +851,7 @@ export const AnomalyList = () => {
                                         >
                                             <FormControl fullWidth>
                                                 <InputLabel variant="standard" htmlFor="uncontrolled-native">
-                                                   Change To
+                                                    Change To
                                                 </InputLabel>
                                                 <NativeSelect
                                                     sx={{ fontSize: '0.775rem' }}

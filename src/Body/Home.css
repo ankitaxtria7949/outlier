@@ -1,0 +1,91 @@
+.tutorial-popup {
+    position: absolute;
+    background-color: white;
+    color: black;
+    padding: 20px;
+    border-radius: 5px;    
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    width:300px;
+    height: auto;
+    z-index: 1000;
+    font-size: 14px;
+}
+
+.tutorial-popup.top {
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.tutorial-popup.bottom {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.tutorial-popup.left {
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.tutorial-popup.right {
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Close Button Styling */
+button {
+    padding: 5px 10px;
+    border-radius: 5px;
+    background-color: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+/* Previous/Next Button Styling */
+button.prev,
+button.next {
+    background-color: navy;
+    margin-right: 20px;
+}
+
+
+button.next {
+    background-color: green;
+}
+
+/* The overlay/spotlight background */
+.spotlight-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent dark background */
+    z-index: 999; /* Position it above the rest of the content */
+    pointer-events: none; /* Let clicks pass through the overlay */
+}
+
+/* The spotlight effect (circular hole) */
+.spotlight-hole {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.5); /* Light background around the hole */
+    border-radius: 50%;
+    pointer-events: none; /* Let clicks pass through the hole */
+}
+
+/* Highlighting the target element with a border */
+.target-highlight {
+    position: relative;
+    z-index: 1001; /* Make sure it's above the spotlight */
+    border: 3px solid #00ff91; 
+    box-shadow: 0 0 10px rgba(34, 239, 195, 0.338); /* Glow effect */
+   ;
+}
+
+
+
+
