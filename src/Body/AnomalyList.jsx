@@ -16,7 +16,7 @@ import {
     Select,
     MenuItem,
     InputLabel,
-   
+
     ButtonGroup,
 } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
@@ -314,7 +314,7 @@ export const AnomalyList = () => {
 
         // Add a button to close the popup
         const closeButton = document.createElement('button');
-        closeButton.textContent = currentStep === steps.length - 1 ? 'Finish' : 'Skip Tutorial';
+        closeButton.textContent = currentStep === (viewMode === 'outliers' ? steps2 : steps).length - 1 ? 'Finish' : 'Skip Tutorial';
         closeButton.style.marginRight = '40px';
         closeButton.style.padding = '5px 10px';
         closeButton.style.borderRadius = '5px';
@@ -322,7 +322,7 @@ export const AnomalyList = () => {
         closeButton.addEventListener('click', () => {
             popup.remove();
             setTutorialActive(false);
-            
+
             targetElement.style.border = '';
             targetElement.style.boxShadow = '';
 
@@ -350,7 +350,7 @@ export const AnomalyList = () => {
         nextButton.textContent = 'Next';
         nextButton.style.padding = '5px 10px';
         nextButton.style.borderRadius = '5px';
-        nextButton.disabled = currentStep === steps.length - 1; // Disable if last step
+        nextButton.disabled = currentStep === (viewMode === 'outliers' ? steps2 : steps).length - 1; // Disable if last step
         nextButton.style.backgroundColor = nextButton.disabled ? 'grey' : 'green';
         nextButton.addEventListener('click', () => {
             popup.remove();
@@ -383,8 +383,15 @@ export const AnomalyList = () => {
     };
 
     useEffect(() => {
-        if (tutorialActive && currentStep < steps.length) {
-            showTutorial(steps[currentStep]); // Show the current step
+        if (viewMode === 'all' || viewMode === 'withoutOutliers') {
+            if (tutorialActive && currentStep < steps.length) {
+                showTutorial(steps[currentStep]); // Show the current step
+            }
+        }
+        else {
+            if (tutorialActive && currentStep < steps2.length) {
+                showTutorial(steps2[currentStep]); // Show the current step
+            }
         }
     }, [tutorialActive, currentStep]);
 
@@ -433,11 +440,10 @@ export const AnomalyList = () => {
         },
 
     ];
-
     const steps2 = [
         {
             index: 0,
-            target: '.',
+            target: '.all-data-btn',
             content: 'Clicking here shows the entire data with highlighted Outliers!',
             placement: 'right',
         },
@@ -467,19 +473,30 @@ export const AnomalyList = () => {
         },
         {
             index: 5,
+            target: '.tick-btn',
+            content: 'click here to select/deselect table rows.',
+            placement: 'right',
+        },
+        {
+            index: 6,
+            target: '.change-btn',
+            content: 'Click here to set the revised market volume to the selected option.',
+            placement: 'left',
+        },
+        {
+            index: 7,
             target: '.download-file-btn',
             content: 'Click to download the table displayed as a CSV file.',
             placement: 'left',
         },
         {
-            index: 6,
+            index: 8,
             target: '.summary-btn',
             content: 'Click to view the summary page.',
             placement: 'left',
         },
 
     ];
-
 
     return (
         <Box sx={{ padding: 2 }}>
@@ -656,12 +673,14 @@ export const AnomalyList = () => {
                     <IconButton
                         onClick={handleStartTutorial}
                         sx={{
-                            color: 'black' ,mr: 2,                            
+                            color: 'black', mr: 2,
                         }}
                     >
-                        <HelpOutlineIcon sx ={{'&:hover': {
+                        <HelpOutlineIcon sx={{
+                            '&:hover': {
                                 color: 'navy',
-                            },}} />
+                            },
+                        }} />
                     </IconButton>
                 </Box>
             </Box>
@@ -676,6 +695,7 @@ export const AnomalyList = () => {
                                 {/* Add Checkbox column header if viewMode is "Outliers" */}
                                 {viewMode === "outliers" && (
                                     <TableCell
+                                        className="tick-btn"
                                         sx={{
                                             fontWeight: "bold",
                                             backgroundColor: "#f5f5f5",
@@ -775,6 +795,7 @@ export const AnomalyList = () => {
                                                 Change Market Volume To
                                             </InputLabel>
                                             <NativeSelect
+                                                className="change-btn"
                                                 sx={{ fontSize: '0.75rem' }}
                                                 value={dropdownCol}
                                                 onChange={(e) => {
@@ -805,6 +826,7 @@ export const AnomalyList = () => {
                                     {/* Add Checkbox column if viewMode is "Outliers" */}
                                     {viewMode === "outliers" && (
                                         <TableCell
+
                                             sx={{
                                                 textAlign: "center",
                                             }}
