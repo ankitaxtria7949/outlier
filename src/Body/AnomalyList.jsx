@@ -279,6 +279,42 @@ export const AnomalyList = () => {
         }; // Cleanup the timer
 
     }, []); // Run only once
+    const showTutorial2 = () => {
+        const step = {
+            index: 0,
+            target: '.tutorial-btn',
+            content: 'You can always see this tutorial by clicking on this button.',
+            placement: 'left',
+        };
+        const targetElement = document.querySelector(step.target);
+        const popup = document.createElement('div');
+        popup.classList.add('tutorial-popup', step.placement);
+        popup.textContent = step.content;
+        targetElement.style.boxShadow = '0px 0px 10px 0px rgba(0,0,0,0.75)';
+        targetElement.style.border = '3px solid navy';
+        // Position the popup based on the target element and placement
+        const rect = targetElement.getBoundingClientRect();
+        let top, left;
+        top = rect.top + rect.height / 2 - popup.offsetHeight / 2;
+        left = rect.left - 350;
+        popup.style.top = `${top}px`;
+        popup.style.left = `${left}px`;
+        document.body.appendChild(popup);
+        // Add a button to close the popup
+        const closeButton = document.createElement('button');
+        closeButton.textContent = 'Cancel';
+        closeButton.style.marginRight = '40px';
+        closeButton.style.padding = '5px 10px';
+        closeButton.style.borderRadius = '5px';
+        closeButton.addEventListener('click', () => {
+            setTutorialActive(false);
+            setCurrentStep(0);
+            popup.remove();
+            targetElement.style.border = '';
+            targetElement.style.boxShadow = '';
+        });
+        popup.appendChild(closeButton);
+    };
 
     const showTutorial = (step) => {
         const targetElement = document.querySelector(step.target);
@@ -325,6 +361,7 @@ export const AnomalyList = () => {
 
             targetElement.style.border = '';
             targetElement.style.boxShadow = '';
+            showTutorial2();
 
         });
         console.log("tutorial state", tutorialActive)
@@ -670,18 +707,14 @@ export const AnomalyList = () => {
                     </FormControl>
                 ))}
                 <Box sx={{ flex: 1, display: "flex", justifyContent: 'flex-end', alignItems: 'center', m: 'auto' }}>
-                    <IconButton
-                        onClick={handleStartTutorial}
-                        sx={{
-                            color: 'black', mr: 2,
-                        }}
+                    <Typography
+                        className='tutorial-btn'
+                        variant="body2"
+                        sx={{ color: 'black', position: 'absolute', right: 0, cursor: 'pointer', mr : 4}}
+                        onClick={() => handleStartTutorial()}
                     >
-                        <HelpOutlineIcon sx={{
-                            '&:hover': {
-                                color: 'navy',
-                            },
-                        }} />
-                    </IconButton>
+                        Show tutorial
+                    </Typography>
                 </Box>
             </Box>
 
