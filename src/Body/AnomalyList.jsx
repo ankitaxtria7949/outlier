@@ -45,7 +45,7 @@ export const AnomalyList = () => {
     const [dropdownCol, setDropdownCol] = useState("No");
     const [tutorialActive, setTutorialActive] = useState(false);
     const [currentStep, setCurrentStep] = useState(0); // Track the current step in the tutorial
-
+    const [tutList, setTutList] = useState(false);
 
 
     // Function to check if a row exists in Outliers
@@ -103,7 +103,6 @@ export const AnomalyList = () => {
         }
         return 0;
     });
-
     // Function to download table data as CSV
     const downloadCSV = () => {
         if (!filteredSummary || filteredSummary.length === 0) return;
@@ -266,19 +265,21 @@ export const AnomalyList = () => {
         });
     };
     useEffect(() => {
-        let isMounted = true;
-        const timer = setTimeout(() => {
-            if (isMounted) {
-                setTutorialActive(true);  // Start the tutorial
-            }
-        }, 1000); // Start after 1 seconds
+        if (!tutList) {
+            setTutList(true);
+            let isMounted = true;
+            const timer = setTimeout(() => {
+                if (isMounted) {
+                    setTutorialActive(true);  // Start the tutorial
+                }
+            }, 1000); // Start after 1 second
 
-        return () => {
-            clearTimeout(timer);
-            isMounted = false;
-        }; // Cleanup the timer
-
-    }, []); // Run only once
+            return () => {
+                clearTimeout(timer);
+                isMounted = false;
+            }; // Cleanup the timer
+        }
+    }, []);
     const showTutorial2 = () => {
         const step = {
             index: 0,
@@ -707,14 +708,14 @@ export const AnomalyList = () => {
                     </FormControl>
                 ))}
                 <Box sx={{ flex: 1, display: "flex", justifyContent: 'flex-end', alignItems: 'center', m: 'auto' }}>
-                    <Typography
+                    <Button
                         className='tutorial-btn'
-                        variant="body2"
-                        sx={{ color: 'black', position: 'absolute', right: 0, cursor: 'pointer', mr : 4}}
+                        variant="contained"
+                        sx={{ backgroundColor: '#007BFF', color: 'white', position: 'absolute', right: 0, mr: 4 }}
                         onClick={() => handleStartTutorial()}
                     >
-                        Show tutorial
-                    </Typography>
+                        Show Tutorial
+                    </Button>
                 </Box>
             </Box>
 

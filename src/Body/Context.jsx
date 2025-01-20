@@ -11,6 +11,8 @@ const MyProvider = ({ children }) => {
     const [DataFileName, setDataFileName] = useState(""); // Full path of uploaded file
     const [Summary, setSummary] =  useState(null); // holds the results from fast-api
     const [ValData, setValData] = useState(null);
+    const [tutHome, setTutHome] = useState(false);
+    const [tutList, setTutList] = useState(false);
     
     
     
@@ -21,7 +23,8 @@ const MyProvider = ({ children }) => {
         DataFileName, setDataFileName,
         Summary, setSummary,
         ValData, setValData,
-      
+        tutHome, setTutHome,
+        tutList, setTutList,
     }}>
       {children}
     </MyContext.Provider>

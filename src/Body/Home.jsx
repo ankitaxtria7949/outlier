@@ -1,55 +1,44 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
-
-import { useContext } from 'react';
-import { Card, CardContent, Typography, CardActionArea, Grid, Box, Button } from '@mui/material';
-import { TrendingUp, TaskAlt } from '@mui/icons-material';
+import { Card, CardContent, Typography, CardActionArea, Grid, Box, Button, Snackbar } from '@mui/material';
 import ScatterPlotIcon from '@mui/icons-material/ScatterPlot';
-import IconButton from '@mui/material/IconButton';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import DeleteIcon from "@mui/icons-material/Delete"; // Delete file icon
-import VisibilityIcon from "@mui/icons-material/Visibility"; // View file icon
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CircularProgress from '@mui/material/CircularProgress';
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { TrendingUp, TaskAlt } from '@mui/icons-material';
+import { useState, useEffect, useContext } from 'react';
+import DeleteIcon from "@mui/icons-material/Delete";
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
 import { useNavigate } from 'react-router-dom';
 import { MyContext } from "./Context";
+import React from 'react';
 import axios from 'axios';
-import { Snackbar } from '@mui/material';
-import CircularProgress from '@mui/material/CircularProgress';
-import DialogTitle from '@mui/material/DialogTitle';
-
 import './Home.css';
-
 
 const Home = () => {
   const navigate = useNavigate();
-  const { ValData, setValData } = useContext(MyContext);
-  const { DataFileName, setDataFileName } = useContext(MyContext); // Full path of uploaded file
-  const { selectedFile, setSelectedFile } = useContext(MyContext); // Holds the uploaded data file
-  const [snackbarOpen, setSnackbarOpen] = useState(false); // Whether the snackbar is open or not
-  const [snackbarMessage, setSnackbarMessage] = useState(''); // Message to display in the snackbar
-  const { Outliers, setOutliers } = useContext(MyContext);
-  const { Summary, setSummary } = useContext(MyContext);
-  const [Loading, setLoading] = useState(false);
+  const { setValData, tutHome, setTutHome, setDataFileName, selectedFile, setSelectedFile, setOutliers, setSummary } = useContext(MyContext);
   const [tutorialActive, setTutorialActive] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0); // Track the current step in the tutorial
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [Loading, setLoading] = useState(false);
 
-
-
-  // Start the tutorial after 1 seconds automatically
   useEffect(() => {
-    let isMounted = true;
-    const timer = setTimeout(() => {
-      if (isMounted) {
-        setTutorialActive(true);  // Start the tutorial
-      }
-    }, 1000); // Start after 1 seconds
+    if (!tutHome) {
+      setTutHome(true);
+      let isMounted = true;
+      const timer = setTimeout(() => {
+        if (isMounted) {
+          setTutorialActive(true);  // Start the tutorial
+        }
+      }, 1000); // Start after 1 second
 
-    return () => {
-      clearTimeout(timer);
-      isMounted = false;
-    }; // Cleanup the timer
-
-  }, []); // Run only once
+      return () => {
+        clearTimeout(timer);
+        isMounted = false;
+      }; // Cleanup the timer
+    }
+  }, []);
   const showTutorial2 = () => {
     const step = {
       index: 0,
@@ -86,7 +75,6 @@ const Home = () => {
     });
     popup.appendChild(closeButton);
   };
-
   const showTutorial = (step) => {
     const targetElement = document.querySelector(step.target);
     const popup = document.createElement('div');
@@ -197,19 +185,15 @@ const Home = () => {
 
     popup.appendChild(buttons); // Insert the buttons after the text
   };
-
-
   const handleStartTutorial = () => {
     setTutorialActive(true);
     setCurrentStep(0); // Start from the first step
   };
-
   useEffect(() => {
     if (tutorialActive && currentStep < steps.length) {
       showTutorial(steps[currentStep]); // Show the current step
     }
   }, [tutorialActive, currentStep]);
-
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -219,7 +203,6 @@ const Home = () => {
     setSnackbarMessage(`File uploaded: ${file.name}`);
     setSnackbarOpen(true);
   };
-
   const handleshowresults = async (flag) => {
 
     if (flag === "outlier") {
@@ -302,29 +285,20 @@ const Home = () => {
       }
     }
   };
-
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
-
-
-  // Handle removing Data File
   const handleRemoveDataFile = () => {
     setSelectedFile(null);
     setDataFileName(""); // Clear the data file name
 
   };
-
-
-
-  // Open file for checking (only for supported types)
   const handleViewFile = () => {
     if (selectedFile) {
       const fileURL = URL.createObjectURL(selectedFile);
       window.open(fileURL, "_blank");
     }
   };
-
   const steps = [
     {
       index: 0,
@@ -358,10 +332,8 @@ const Home = () => {
     },
 
   ];
-
   return (
     <>
-
       {Loading &&
         <Box
           sx={{
@@ -401,14 +373,16 @@ const Home = () => {
             <h1 style={{ textWrap: 'nowrap' }}>Welcome to the Outlier Detection Tool!</h1>
           </Box>
 
-          <Typography
-            className='tutorial-btn'
-            variant="body2"
-            sx={{ color: 'black', position: 'absolute', right: 0, cursor: 'pointer', mt: 6, mr: 2 }}
-            onClick={() => handleStartTutorial()}
-          >
-            Show tutorial
-          </Typography>
+          <Box sx={{ flex: 1, display: "flex", justifyContent: 'flex-end', alignItems: 'center', m: 'auto' }}>
+            <Button
+              className='tutorial-btn'
+              variant="contained"
+              sx={{ backgroundColor: '#007BFF', color: 'white', position: 'absolute', right: 0, mr: 4 }}
+              onClick={() => handleStartTutorial()}
+            >
+              Show Tutorial
+            </Button>
+          </Box>
         </Box>
         <Grid container spacing={4} justifyContent="center" sx={{ marginBottom: '20px' }}>
           {/* Card 1 */}
@@ -449,7 +423,6 @@ const Home = () => {
               </CardActionArea>
             </Card>
           </Grid>
-
           {/* Card 2 */}
           <Grid item xs={12} sm={6} md={4}>
             <Card
@@ -481,7 +454,6 @@ const Home = () => {
               </CardActionArea>
             </Card>
           </Grid>
-
           {/* Card 3 */}
           <Grid item xs={12} sm={6} md={4}>
             <Card
@@ -521,8 +493,6 @@ const Home = () => {
             </Card>
           </Grid>
         </Grid>
-
-
         {/* Centered Button */}
         <DialogTitle style={{ cursor: 'pointer' }}>
           <input
@@ -552,7 +522,6 @@ const Home = () => {
               Import Data
             </Button>
           </label>
-
           <Typography variant="subtitle2" component="span" sx={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'blue', textDecoration: 'underline', display: 'block', marginTop: '10px', textAlign: 'center' }}
             onClick={() => {
               const link = document.createElement('a');
@@ -567,7 +536,6 @@ const Home = () => {
           >
             See the demo file
           </Typography>
-
           {selectedFile && (
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', mr: 3 }}>
@@ -581,9 +549,7 @@ const Home = () => {
               </IconButton>
             </Box>
           )}
-
         </DialogTitle>
-
         <Snackbar
           open={snackbarOpen}
           autoHideDuration={3000} // 3 seconds
@@ -599,5 +565,4 @@ const Home = () => {
     </>
   );
 };
-
 export default Home;
