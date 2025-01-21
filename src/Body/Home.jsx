@@ -13,187 +13,263 @@ import { MyContext } from "./Context";
 import React from 'react';
 import axios from 'axios';
 import './Home.css';
+import introJs from 'intro.js';
+
 
 const Home = () => {
   const navigate = useNavigate();
   const { setValData, tutHome, setTutHome, setDataFileName, selectedFile, setSelectedFile, setOutliers, setSummary } = useContext(MyContext);
-  const [tutorialActive, setTutorialActive] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
   const [Loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!tutHome) {
-      setTutHome(true);
-      let isMounted = true;
-      const timer = setTimeout(() => {
-        if (isMounted) {
-          setTutorialActive(true);  // Start the tutorial
-        }
-      }, 1000); // Start after 1 second
+    let isMounted = true;
+    const timer = setTimeout(() => {
+      if (isMounted && tutHome) {
+        setTutHome(false);
+        showTutorial();  // Start the tutorial
+      }
+    }, 1000); // Start after 1 second
 
-      return () => {
-        clearTimeout(timer);
-        isMounted = false;
-      }; // Cleanup the timer
-    }
+    return () => {
+      clearTimeout(timer);
+      isMounted = false;
+    }; // Cleanup the timer
+
   }, []);
   const showTutorial2 = () => {
-    const step = {
-      index: 0,
-      target: '.tutorial-btn',
-      content: 'You can always see this tutorial by clicking on this button.',
-      placement: 'left',
-    };
-    const targetElement = document.querySelector(step.target);
-    const popup = document.createElement('div');
-    popup.classList.add('tutorial-popup', step.placement);
-    popup.textContent = step.content;
-    targetElement.style.boxShadow = '0px 0px 10px 0px rgba(0,0,0,0.75)';
-    targetElement.style.border = '3px solid navy';
-    // Position the popup based on the target element and placement
-    const rect = targetElement.getBoundingClientRect();
-    let top, left;
-    top = rect.top + rect.height / 2 - popup.offsetHeight / 2;
-    left = rect.left - 350;
-    popup.style.top = `${top}px`;
-    popup.style.left = `${left}px`;
-    document.body.appendChild(popup);
-    // Add a button to close the popup
-    const closeButton = document.createElement('button');
-    closeButton.textContent = 'Cancel';
-    closeButton.style.marginRight = '40px';
-    closeButton.style.padding = '5px 10px';
-    closeButton.style.borderRadius = '5px';
-    closeButton.addEventListener('click', () => {
-      setTutorialActive(false);
-      setCurrentStep(0);
-      popup.remove();
-      targetElement.style.border = '';
-      targetElement.style.boxShadow = '';
+    const end = introJs();
+    end.setOptions({
+      steps: [
+        {
+          element: '.start-tour-button',
+          intro: 'You can click here to rewatch the tutorial.',
+          position: 'left'
+        },
+      ],
+      showProgress: false, // Disable progress bar
+      showStepNumbers: false,
+      showBullets: false,
+      nextLabel: '', // Remove "Next" button label
+      prevLabel: '', // Remove "Previous" button label    
+      showButtons: false, // Disable default Next/Prev buttons
     });
-    popup.appendChild(closeButton);
+
+    end.onafterchange(() => {
+      const tooltipContainer = document.querySelector('.introjs-tooltipbuttons');
+      const tooltip = document.querySelector('.introjs-tooltip');
+      const crossIcon = document.querySelector('.introjs-skipbutton')
+
+      if (crossIcon) {
+        Object.assign(crossIcon.style, {
+          color: "red",
+          padding: "2px",
+          marginBottom: '0px'
+        })
+      }
+      // Remove any existing buttons in the tooltip
+      if (tooltipContainer) {
+        tooltipContainer.innerHTML = ''; // Clear all buttons
+      }
+
+      // Style the tooltip box
+      if (tooltip) {
+        Object.assign(tooltip.style, {
+          backgroundColor: '#f9f9f9',
+          color: '#333',
+          whiteSpace: 'nowrap',
+          borderRadius: '6px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          padding: "5px",
+          maxWidth: '500px',
+          fontSize: '14px',
+          minWidth: '300px',
+          textAlign: 'center',
+        });
+        tooltip.style.display = 'flex';
+        tooltip.style.flexDirection = 'column';
+        tooltip.style.justifyContent = 'space-between';
+      }
+    });
+
+
+    end.start();
   };
-  const showTutorial = (step) => {
-    const targetElement = document.querySelector(step.target);
-    const popup = document.createElement('div');
-    popup.classList.add('tutorial-popup', step.placement);
-    popup.textContent = step.content;
-
-    // Position the popup based on the target element and placement
-    const rect = targetElement.getBoundingClientRect();
-    let top, left;
-
-    if (step.placement === 'top') {
-      top = rect.top - popup.offsetHeight;
-      left = rect.left + rect.width / 2 - popup.offsetWidth / 2;
-    } else if (step.placement === 'bottom') {
-      top = rect.bottom + 30;
-      left = rect.left + rect.width / 2 - popup.offsetWidth / 2;
-    } else if (step.placement === 'left') {
-      top = rect.top + rect.height / 2 - popup.offsetHeight / 2;
-      left = rect.left - popup.offsetWidth;
-    } else if (step.placement === 'right') {
-      top = rect.top + rect.height / 2 - popup.offsetHeight / 2;
-      left = rect.right + 10;
-    }
-
-    popup.style.top = `${top}px`;
-    popup.style.left = `${left}px`;
-
-    document.body.appendChild(popup);
-
-    // Create the spotlight overlay
-    const overlay = document.createElement('div');
-    overlay.classList.add('spotlight-overlay');
-    document.body.appendChild(overlay);
-
-    // Create the spotlight hole and position it over the target element
-    const spotlightHole = document.createElement('div');
-    spotlightHole.classList.add('spotlight-hole');
-    spotlightHole.style.width = `${rect.width}px`;
-    spotlightHole.style.height = `${rect.height}px`;
-    spotlightHole.style.top = `${rect.top}px`;
-    spotlightHole.style.left = `${rect.left}px`;
-    document.body.appendChild(spotlightHole);
-
-    // Add the target highlight effect
-    targetElement.classList.add('target-highlight');
-
-    // Add a button to close the popup
-    const closeButton = document.createElement('button');
-    closeButton.textContent = currentStep === steps.length - 1 ? 'Finish' : 'Skip Tutorial';
-    closeButton.style.marginRight = '40px';
-    closeButton.style.padding = '5px 10px';
-    closeButton.style.borderRadius = '5px';
-
-    closeButton.addEventListener('click', () => {
-      setTutorialActive(false);
-      popup.remove();
-      overlay.remove();
-      spotlightHole.remove();
-      targetElement.classList.remove('target-highlight');
-      showTutorial2();
+  const showTutorial = () => {
+    const intro = introJs();
+    intro.setOptions({
+      steps: [
+        {
+          element: '.import-data-btn',
+          intro: 'Click here to upload your data file!',
+        },
+        {
+          element: '.outlier-detection-card',
+          intro: 'Click here to detect outliers in your data.',
+        },
+        {
+          element: '.trendbreak-card',
+          intro: 'Click here to see disruptions or trends in your data.',
+        },
+        {
+          element: '.validation-card',
+          intro: 'Click here to perform data validation to ensure its accuracy.',
+        },
+        {
+          element: '.view-file-btn',
+          intro: 'Click to view the uploaded file.',
+        },
+      ],
+      showProgress: false, // Disable progress bar
+      showStepNumbers: false,
+      showBullets: false,
+      nextLabel: 'Next step',
+      prevLabel: 'Previous step',
+      doneLabel: 'Finished'
     });
 
-    popup.appendChild(closeButton);
+    intro.onafterchange(() => {
+      const tooltipContainer = document.querySelector('.introjs-tooltipbuttons');
+      const nextButton = document.querySelector('.introjs-nextbutton');
+      const prevButton = document.querySelector('.introjs-prevbutton');
+      const tooltip = document.querySelector('.introjs-tooltip');
+      const totalSteps = intro._options.steps.length; // Get total number of steps
+      const currentStep = intro._currentStep; // Get current step index
+      console.log(currentStep)
+      console.log(totalSteps)
 
-    const previousButton = document.createElement('button');
-    previousButton.textContent = 'Previous';
-    previousButton.style.padding = '5px 10px';
-    previousButton.style.marginRight = '5px';
-    previousButton.style.borderRadius = '5px';
-    previousButton.disabled = currentStep === 0; // Disable if first step
-    previousButton.style.backgroundColor = previousButton.disabled ? 'grey' : 'navy';
-    previousButton.addEventListener('click', () => {
-      popup.remove();
-      overlay.remove();
-      spotlightHole.remove();
-      targetElement.classList.remove('target-highlight');
-      setCurrentStep(currentStep - 1); // Move to previous step
+      // Remove default close button
+      const crossIcon = document.querySelector('.introjs-skipbutton');
+      if (crossIcon) {
+        crossIcon.remove();
+      }
+
+      // Add a custom "Skip tutorial" button
+      let customSkipButton = document.querySelector('.custom-skip-button');
+      if (!customSkipButton) {
+        customSkipButton = document.createElement('button');
+        customSkipButton.className = 'custom-skip-button';
+        Object.assign(customSkipButton.style, {
+          backgroundColor: 'red',
+          fontSize: '12px',
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          color: 'white',
+          fontWeight: 'bold',
+          textShadow: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          height: '20px',
+          borderRadius: '5px',
+        });
+
+        customSkipButton.onclick = () => {
+          intro.exit(); // End the current tour
+          showTutorial2(); // Start the second tour
+        };
+
+        if (tooltipContainer && prevButton) {
+          tooltipContainer.insertBefore(customSkipButton, prevButton.nextSibling);
+        }
+      }
+
+      // Update the custom "Skip tutorial" button text dynamically
+      if (currentStep === totalSteps - 1) {
+        customSkipButton.textContent = 'Close'; // Change Skip button text to "Close"
+      } else {
+        customSkipButton.textContent = 'Skip tutorial'; // Reset Skip button text
+      }
+
+      if (nextButton) {
+        if (currentStep === totalSteps - 1) {
+          // Disable and style the Next button on the last step
+          nextButton.disabled = true;
+          Object.assign(nextButton.style, {
+            position: 'absolute',
+            bottom: '15px',
+            right: '10px',
+            backgroundColor: 'grey',
+            color: 'white',
+            cursor: 'not-allowed',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            textShadow: 'none',
+            padding: '5px 10px',
+            borderRadius: '5px',
+            boxShadow: 'none',
+          });
+        } else {
+          // Enable and style the Next button for other steps
+          nextButton.disabled = false;
+          Object.assign(nextButton.style, {
+            position: 'absolute',
+            bottom: '15px',
+            right: '10px',
+            backgroundColor: 'green',
+            color: 'white',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            textShadow: 'none',
+            padding: '5px 10px',
+            borderRadius: '5px',
+            boxShadow: 'none',
+          });
+        }
+      }
+
+      // Style the Previous button
+      if (prevButton) {
+        if (currentStep === 0) {
+          prevButton.disabled = true;
+          Object.assign(prevButton.style, {
+            backgroundColor: 'grey',
+            fontSize: '12px',
+            color: 'white',
+            marginRight: '40px',
+            fontWeight: 'bold',
+            textShadow: 'none',
+            borderRadius: '5px',
+            padding: '5px 10px',
+          });
+        }
+        else {
+          Object.assign(prevButton.style, {
+            backgroundColor: 'navy',
+            fontSize: '12px',
+            color: 'white',
+            marginRight: '40px',
+            fontWeight: 'bold',
+            textShadow: 'none',
+            borderRadius: '5px',
+            padding: '5px 10px',
+          })
+        }
+      }
+
+      // Style the tooltip box
+      if (tooltip) {
+        Object.assign(tooltip.style, {
+          backgroundColor: '#f9f9f9',
+          color: '#333',
+          borderRadius: '6px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          padding: '5px',
+          maxWidth: '500px',
+          fontSize: '14px',
+          minWidth: '300px',
+          textAlign: 'center',
+        });
+      }
     });
 
-    const nextButton = document.createElement('button');
-    nextButton.textContent = 'Next';
-    nextButton.style.padding = '5px 10px';
-    nextButton.style.borderRadius = '5px';
-    nextButton.disabled = currentStep === steps.length - 1; // Disable if last step
-    nextButton.style.backgroundColor = nextButton.disabled ? 'grey' : 'green';
-    nextButton.addEventListener('click', () => {
-      popup.remove();
-      overlay.remove();
-      spotlightHole.remove();
-      targetElement.classList.remove('target-highlight');
-      setCurrentStep(currentStep + 1); // Move to next step
-    });
-
-
-
-    const buttons = document.createElement('div');
-    buttons.style.display = 'flex';
-    buttons.style.marginTop = '20px';
-    buttons.style.justifyContent = 'space-between';
-    buttons.style.width = '100%';
-    buttons.appendChild(closeButton);
-
-    const flexEndButtons = document.createElement('div');
-    flexEndButtons.style.display = 'flex';
-    flexEndButtons.appendChild(previousButton);
-    flexEndButtons.appendChild(nextButton);
-    buttons.appendChild(flexEndButtons);
-
-    popup.appendChild(buttons); // Insert the buttons after the text
+    intro.start();
   };
   const handleStartTutorial = () => {
-    setTutorialActive(true);
-    setCurrentStep(0); // Start from the first step
+    showTutorial();
   };
-  useEffect(() => {
-    if (tutorialActive && currentStep < steps.length) {
-      showTutorial(steps[currentStep]); // Show the current step
-    }
-  }, [tutorialActive, currentStep]);
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -299,39 +375,7 @@ const Home = () => {
       window.open(fileURL, "_blank");
     }
   };
-  const steps = [
-    {
-      index: 0,
-      target: '.import-data-btn',
-      content: 'Click here to upload your data file!',
-      placement: 'right',
-    },
-    {
-      index: 1,
-      target: '.outlier-detection-card',
-      content: 'Click here to detect outliers in your data.',
-      placement: 'bottom',
-    },
-    {
-      index: 2,
-      target: '.trendbreak-card',
-      content: 'Click here to see disruptions or trends in your data.',
-      placement: 'bottom',
-    },
-    {
-      index: 3,
-      target: '.validation-card',
-      content: 'Click here to perform data validation to ensure its accuracy.',
-      placement: 'bottom',
-    },
-    {
-      index: 4,
-      target: '.view-file-btn',
-      content: 'Click to view the uploaded file.',
-      placement: 'right',
-    },
 
-  ];
   return (
     <>
       {Loading &&
@@ -375,7 +419,7 @@ const Home = () => {
 
           <Box sx={{ flex: 1, display: "flex", justifyContent: 'flex-end', alignItems: 'center', m: 'auto' }}>
             <Button
-              className='tutorial-btn'
+              className='start-tour-button'
               variant="contained"
               sx={{ backgroundColor: '#007BFF', color: 'white', position: 'absolute', right: 0, mr: 4 }}
               onClick={() => handleStartTutorial()}

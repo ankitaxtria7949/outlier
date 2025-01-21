@@ -11,11 +11,8 @@ const MyProvider = ({ children }) => {
     const [DataFileName, setDataFileName] = useState(""); // Full path of uploaded file
     const [Summary, setSummary] =  useState(null); // holds the results from fast-api
     const [ValData, setValData] = useState(null);
-    const [tutHome, setTutHome] = useState(false);
-    const [tutList, setTutList] = useState(false);
-    
-    
-    
+    const [tutHome, setTutHome] = useState(true);
+    const [tutList, setTutList] = useState(true);
   return (
     <MyContext.Provider value={{
         selectedFile, setSelectedFile,
